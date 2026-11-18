@@ -159,19 +159,6 @@
                 </div>
             @endif
 
-            <!-- ------------------ STAGE 1: BELUM DIAJUKAN (PILIH METODE & REKENING) ------------------ -->
-            @if(!$return)
-                <form action="{{ route('orders.return.store', $detail->id) }}" method="POST" class="space-y-6">
-                    @csrf
-                    <div>
-                        <label class="block text-sm font-bold text-slate-700 mb-2">Alamat Toko (Tujuan Pengembalian)</label>
-                        <div class="p-4 bg-emerald-50 text-emerald-800 rounded-2xl text-sm border border-emerald-100">
-                            <p class="font-bold text-base">{{ $detail->product->store->nama_toko ?? 'Toko Campify' }}</p>
-                            <p class="mt-1 text-slate-600">{{ $detail->product->store->alamat ?? 'Alamat Toko tidak terintegrasi' }}</p>
-                            <p class="mt-2 text-xs opacity-75 font-semibold">Toko ini yang bertanggung jawab untuk menerima barang pengembalian.</p>
-                        </div>
-                    </div>
-
             <!-- ------------------ STAGE SECTIONS ------------------ -->
             @if($detail->type === 'rent')
                 <!-- ================== ALUR SEWA (RENTAL - UNTOUCHED & ORIGINAL) ================== -->
@@ -855,6 +842,7 @@
                         </div>
                     </div>
                 </div>
+            @endif
             @endif
 
             <!-- ------------------ LEGACY JUAL BELI VIEW Fallback ------------------ -->
