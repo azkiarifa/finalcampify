@@ -87,20 +87,21 @@ class DashboardController extends Controller
                 $pdfData['storeBanned'] = Store::where('status', 'banned')->count();
 
                 $months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                $monthSql = $this->getMonthSql();
 
-                $monthlyOrders = Order::selectRaw('MONTH(created_at) as month, COUNT(*) as count, SUM(total) as revenue')
+                $monthlyOrders = Order::selectRaw("{$monthSql} as month, COUNT(*) as count, SUM(total) as revenue")
                     ->whereYear('created_at', now()->year)
-                    ->groupByRaw('MONTH(created_at)')
+                    ->groupByRaw($monthSql)
                     ->pluck('revenue', 'month')->toArray();
 
-                $monthlyOrderCounts = Order::selectRaw('MONTH(created_at) as month, COUNT(*) as count')
+                $monthlyOrderCounts = Order::selectRaw("{$monthSql} as month, COUNT(*) as count")
                     ->whereYear('created_at', now()->year)
-                    ->groupByRaw('MONTH(created_at)')
+                    ->groupByRaw($monthSql)
                     ->pluck('count', 'month')->toArray();
 
-                $monthlyUsers = User::selectRaw('MONTH(created_at) as month, COUNT(*) as count')
+                $monthlyUsers = User::selectRaw("{$monthSql} as month, COUNT(*) as count")
                     ->whereYear('created_at', now()->year)
-                    ->groupByRaw('MONTH(created_at)')
+                    ->groupByRaw($monthSql)
                     ->pluck('count', 'month')->toArray();
 
                 $monthlyData = [];
@@ -260,37 +261,41 @@ class DashboardController extends Controller
         $monthlyUserActivity = array_fill(1, 12, 0);
         $hasTransactionCreatedAt = Schema::hasColumn('transactions', 'created_at');
         $hasOrderCreatedAt = Schema::hasTable('orders') && Schema::hasColumn('orders', 'created_at');
+        $monthSql = $this->getMonthSql();
 
         if ($hasOrderCreatedAt) {
-            $transactionStats = Order::selectRaw('MONTH(created_at) as month, COUNT(*) as count, SUM(total) as revenue')
+            $transactionStats = Order::selectRaw("{$monthSql} as month, COUNT(*) as count, SUM(total) as revenue")
                 ->whereYear('created_at', now()->year)
-                ->groupByRaw('MONTH(created_at)')
+                ->groupByRaw($monthSql)
                 ->get();
 
             foreach ($transactionStats as $stat) {
-                $monthlyTransactionCounts[$stat->month] = (int) $stat->count;
-                $monthlyRevenue[$stat->month] = (int) $stat->revenue;
+                $m = (int) $stat->month;
+                $monthlyTransactionCounts[$m] = (int) $stat->count;
+                $monthlyRevenue[$m] = (int) $stat->revenue;
             }
         } elseif ($hasTransactionCreatedAt) {
-            $transactionStats = Transaction::selectRaw('MONTH(created_at) as month, COUNT(*) as count, SUM(total) as revenue')
+            $transactionStats = Transaction::selectRaw("{$monthSql} as month, COUNT(*) as count, SUM(total) as revenue")
                 ->whereYear('created_at', now()->year)
-                ->groupByRaw('MONTH(created_at)')
+                ->groupByRaw($monthSql)
                 ->get();
 
             foreach ($transactionStats as $stat) {
-                $monthlyTransactionCounts[$stat->month] = (int) $stat->count;
-                $monthlyRevenue[$stat->month] = (int) $stat->revenue;
+                $m = (int) $stat->month;
+                $monthlyTransactionCounts[$m] = (int) $stat->count;
+                $monthlyRevenue[$m] = (int) $stat->revenue;
             }
         }
 
         if (Schema::hasColumn('users', 'created_at')) {
-            $userStats = User::selectRaw('MONTH(created_at) as month, COUNT(*) as count')
+            $userStats = User::selectRaw("{$monthSql} as month, COUNT(*) as count")
                 ->whereYear('created_at', now()->year)
-                ->groupByRaw('MONTH(created_at)')
+                ->groupByRaw($monthSql)
                 ->get();
 
             foreach ($userStats as $stat) {
-                $monthlyUserActivity[$stat->month] = (int) $stat->count;
+                $m = (int) $stat->month;
+                $monthlyUserActivity[$m] = (int) $stat->count;
             }
         }
 
@@ -326,9 +331,10 @@ class DashboardController extends Controller
         $totalEscrow = $jaminanSewaEscrow + $danaReturEscrow;
 
         // Resolution Time (Avg days)
+        $avgDaysSql = $this->getDateDiffDaysSql('actual_date', 'created_at');
         $avgResolutionTime = \App\Models\ReturnEscrow::where('status', 'completed')
             ->whereNotNull('actual_date')
-            ->selectRaw('AVG(DATEDIFF(actual_date, created_at)) as avg_days')
+            ->selectRaw($avgDaysSql)
             ->first()->avg_days ?? 0;
 
         // New Products this week
@@ -437,5 +443,31 @@ class DashboardController extends Controller
             'latestTransactions' => $latestTransactions,
             'hasCreatedAt' => $hasOrderCreatedAt || $hasTransactionCreatedAt,
         ]);
+    }
+
+    /**
+     * Get database-agnostic SQL expression for extracting month from created_at
+     */
+    private function getMonthSql(): string
+    {
+        $driver = DB::connection()->getDriverName();
+        return match ($driver) {
+            'pgsql' => 'EXTRACT(MONTH FROM created_at)',
+            'sqlite' => "CAST(strftime('%m', created_at) AS INTEGER)",
+            default => 'MONTH(created_at)',
+        };
+    }
+
+    /**
+     * Get database-agnostic SQL expression for date difference in days
+     */
+    private function getDateDiffDaysSql(string $date1, string $date2): string
+    {
+        $driver = DB::connection()->getDriverName();
+        return match ($driver) {
+            'pgsql' => "AVG(DATE({$date1}) - DATE({$date2})) as avg_days",
+            'sqlite' => "AVG(julianday({$date1}) - julianday({$date2})) as avg_days",
+            default => "AVG(DATEDIFF({$date1}, {$date2})) as avg_days",
+        };
     }
 }

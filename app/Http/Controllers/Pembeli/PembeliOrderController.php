@@ -95,9 +95,8 @@ class PembeliOrderController extends Controller
             ]);
 
             $depositAmount = ($detail->product->escrow_amount > 0) ? $detail->product->escrow_amount : (($detail->product->buy_price ?? 0) * 0.25);
-
-            $depositAmount = ($detail->product->buy_price ?? 0) * 0.25;
             $rentalFeeAmount = $detail->harga;
+            $adminFee = (int) ($rentalFeeAmount * 0.1); // Biaya admin platform (10% dari biaya sewa)
             $escrowTotal = $depositAmount + $rentalFeeAmount;
 
             $startDate = Carbon::parse($detail->start_date)->startOfDay();
