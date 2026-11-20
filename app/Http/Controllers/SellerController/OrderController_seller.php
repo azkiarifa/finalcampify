@@ -106,11 +106,16 @@ class OrderController_seller extends Controller
         $request->validate([
             'status' => 'required',
             'resi' => 'nullable|string|max:255',
-            'video_pengiriman' => 'nullable|file|mimes:mp4,mov,avi|max:20480',
+            'video_pengiriman' => 'nullable|file|mimes:jpg,jpeg,png,webp,mp4,mov,avi|max:20480',
         ]);
 
         $status = $statusMap[$request->status] ?? $request->status;
         $resi = $request->resi ?? $request->no_resi;
+
+        // Jika mengubah status menjadi Dikirim, pastikan nomor resi terisi
+        if ($status === SellerOrder::STATUS_SHIPPED && empty($resi)) {
+            return back()->with('error', 'Nomor resi pengiriman wajib diisi saat mengubah status pesanan menjadi Dikirim.')->withInput();
+        }
 
         $updateData = [
             'status' => $status,
@@ -119,15 +124,15 @@ class OrderController_seller extends Controller
             'delivered_at' => $status === SellerOrder::STATUS_DELIVERED ? ($order->delivered_at ?? now()) : $order->delivered_at,
         ];
 
-        // If status changing to 'dikirim' or already 'dikirim'/'selesai' and a video is uploaded
+        // Jika ada file bukti pengiriman (foto atau video) yang diunggah
         if ($request->hasFile('video_pengiriman')) {
             $file = $request->file('video_pengiriman');
             $updateData['video_pengiriman_hash'] = md5_file($file->getRealPath());
-            $filename = 'kirim_' . time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('assets/videos'), $filename);
-            $updateData['video_pengiriman'] = 'assets/videos/' . $filename;
-        } else if ($status === SellerOrder::STATUS_SHIPPED && !$order->video_pengiriman) {
-             return back()->with('error', 'Video bukti pengiriman wajib diunggah saat mengubah status menjadi Dikirim.');
+            $ext = strtolower($file->getClientOriginalExtension());
+            $filename = 'kirim_' . time() . '_' . uniqid() . '.' . $ext;
+            $dest = in_array($ext, ['mp4', 'mov', 'avi']) ? 'assets/videos' : 'assets/images';
+            $file->move(public_path($dest), $filename);
+            $updateData['video_pengiriman'] = $dest . '/' . $filename;
         }
 
         $prevStatus = $order->status;

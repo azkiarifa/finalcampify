@@ -32,11 +32,24 @@ class SellerOrderService
             $sellerId = $store?->user_id ?? $product?->sellerUserId();
             $subtotal = (int) $items->sum(fn($item) => ((int) $item->harga) * ((int) $item->qty));
 
-            $sellerOrder = SellerOrder::query()
-                ->where('order_id', $order->id)
-                ->when($storeId, fn($query) => $query->where('store_id', $storeId), fn($query) => $query->whereNull('store_id'))
-                ->when($sellerId, fn($query) => $query->where('seller_id', $sellerId), fn($query) => $query->whereNull('seller_id'))
-                ->first();
+            // Cek apakah item dalam pesanan ini sudah memiliki SellerOrder sebelumnya
+            $existingSellerOrderId = SellerOrderItem::whereIn('order_detail_id', $items->pluck('id'))->value('seller_order_id');
+            $sellerOrder = $existingSellerOrderId ? SellerOrder::find($existingSellerOrderId) : null;
+
+            if (!$sellerOrder) {
+                $sellerOrder = SellerOrder::query()
+                    ->where('order_id', $order->id)
+                    ->where(function ($q) use ($storeId, $sellerId) {
+                        if ($storeId && $sellerId) {
+                            $q->where('store_id', $storeId)->orWhere('seller_id', $sellerId);
+                        } elseif ($storeId) {
+                            $q->where('store_id', $storeId);
+                        } elseif ($sellerId) {
+                            $q->where('seller_id', $sellerId);
+                        }
+                    })
+                    ->first();
+            }
 
             if (!$sellerOrder) {
                 $sellerOrder = new SellerOrder([
@@ -53,12 +66,17 @@ class SellerOrderService
                 ]);
             }
 
-            $sellerOrder->fill([
-                'store_id' => $storeId,
-                'seller_id' => $sellerId,
+            $fillData = [
                 'subtotal' => $subtotal,
-            ]);
+            ];
+            if ($storeId && empty($sellerOrder->store_id)) {
+                $fillData['store_id'] = $storeId;
+            }
+            if ($sellerId && empty($sellerOrder->seller_id)) {
+                $fillData['seller_id'] = $sellerId;
+            }
 
+            $sellerOrder->fill($fillData);
             $sellerOrder->save();
 
             if (!$sellerOrder->seller_order_number) {
@@ -70,10 +88,10 @@ class SellerOrderService
             foreach ($items as $item) {
                 SellerOrderItem::updateOrCreate(
                     [
-                        'seller_order_id' => $sellerOrder->id,
                         'order_detail_id' => $item->id,
                     ],
                     [
+                        'seller_order_id' => $sellerOrder->id,
                         'product_id' => $item->product_id,
                         'qty' => (int) $item->qty,
                         'harga' => (int) $item->harga,

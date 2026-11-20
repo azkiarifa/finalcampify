@@ -127,6 +127,11 @@
          class="transition-all {{ request()->routeIs('produk.index*') ? 'text-white font-extrabold border-b-2 border-emerald-400 pb-1' : 'text-white/80 hover:text-white' }}">Beli</a>
       <a href="{{ route('articles.index') }}" 
          class="transition-all {{ request()->routeIs('articles*') ? 'text-white font-extrabold border-b-2 border-emerald-400 pb-1' : 'text-white/80 hover:text-white' }}">Artikel</a>
+      <a href="{{ request()->routeIs('landing') ? '#download-app' : route('landing') . '#download-app' }}" 
+         class="text-emerald-300 hover:text-emerald-200 transition-all flex items-center gap-1.5 ml-auto text-xs sm:text-sm bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full border border-emerald-400/30">
+        <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+        <span>Download App</span>
+      </a>
     </div>
 
   </div>

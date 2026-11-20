@@ -20,41 +20,76 @@
         <div class="card card-modern border-0 shadow-sm p-4" style="border-radius:16px;">
             <div class="mb-4 pb-3 border-bottom">
                 <h5 class="fw-bold mb-1 text-dark">{{ $order->buyer_name }}</h5>
-                <p class="text-muted small mb-0">Produk: <strong class="text-emerald">{{ optional($order->product)->nama_produk ?? '-' }}</strong></p>
+                @php
+                    $firstItem = $order->items->first();
+                    $productName = $firstItem?->product?->name ?? $firstItem?->product?->nama_produk ?? optional($order->product)->nama_produk ?? '-';
+                    $itemCount = $order->items->count();
+                @endphp
+                <p class="text-muted small mb-0">Produk: <strong class="text-emerald">{{ $productName }}{{ $itemCount > 1 ? " (+".($itemCount-1)." produk lainnya)" : "" }}</strong></p>
             </div>
+
+            @if($errors->any())
+                <div class="alert alert-danger alert-modern rounded-3 mb-4 p-3 shadow-sm">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <strong class="small">Periksa kembali data yang dimasukkan:</strong>
+                    </div>
+                    <ul class="mb-0 small ps-4">
+                        @foreach($errors->all() as $err)
+                            <li>{{ $err }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
 
             <form method="POST" action="/seller/orders/{{ $order->id }}" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 
+                @php
+                    $activeStatus = old('status', request('status', $order->status));
+                    if ($activeStatus === 'dikirim') $activeStatus = 'shipped';
+                    if ($activeStatus === 'diproses') $activeStatus = 'processing';
+                    if ($activeStatus === 'menunggu') $activeStatus = 'pending';
+                    if ($activeStatus === 'selesai') $activeStatus = 'delivered';
+                @endphp
+
                 <div class="mb-4">
                     <label class="form-label fw-bold text-muted small text-uppercase ls-1">Status Pesanan</label>
                     <select name="status" class="form-select border-0 bg-light rounded-3 px-3 py-2 shadow-sm">
-                        <option value="pending" {{ $order->status == 'pending' ? 'selected' : '' }}>Menunggu</option>
-                        <option value="processing" {{ $order->status == 'processing' ? 'selected' : '' }}>Diproses</option>
-                        <option value="shipped" {{ $order->status == 'shipped' ? 'selected' : '' }}>Dikirim</option>
-                        <option value="delivered" {{ $order->status == 'delivered' ? 'selected' : '' }}>Delivered</option>
-                        <option value="cancelled" {{ $order->status == 'cancelled' ? 'selected' : '' }}>Dibatalkan</option>
+                        <option value="pending" {{ $activeStatus == 'pending' ? 'selected' : '' }}>Menunggu</option>
+                        <option value="processing" {{ $activeStatus == 'processing' ? 'selected' : '' }}>Diproses</option>
+                        <option value="shipped" {{ $activeStatus == 'shipped' ? 'selected' : '' }}>Dikirim</option>
+                        <option value="delivered" {{ $activeStatus == 'delivered' ? 'selected' : '' }}>Selesai / Delivered</option>
+                        <option value="cancelled" {{ $activeStatus == 'cancelled' ? 'selected' : '' }}>Dibatalkan</option>
                     </select>
                 </div>
 
                 <div class="mb-4">
-                    <label class="form-label fw-bold text-muted small text-uppercase ls-1">Nomor Resi Pengiriman</label>
+                    <label class="form-label fw-bold text-muted small text-uppercase ls-1">Nomor Resi Pengiriman <span class="text-danger">*</span></label>
                     <input type="text" name="resi" class="form-control border-0 bg-light rounded-3 px-3 py-2 shadow-sm" 
-                           value="{{ $order->resi ?? $order->no_resi ?? '' }}" 
-                           placeholder="Masukkan nomor resi pengiriman">
+                           value="{{ old('resi', $order->resi ?? $order->no_resi ?? '') }}" 
+                           placeholder="Masukkan nomor resi pengiriman (misal: JNE123456789)" required>
+                    <small class="text-muted">Wajib diisi saat status diubah menjadi <strong>Dikirim</strong>.</small>
                 </div>
 
                 <div class="mb-4">
-                    <label class="form-label fw-bold text-muted small text-uppercase ls-1">Video Bukti Pengiriman (Wajib saat Dikirim)</label>
-                    <input type="file" name="video_pengiriman" accept="video/mp4,video/quicktime,video/x-msvideo" class="form-control border-0 bg-light rounded-3 px-3 py-2 shadow-sm">
+                    <label class="form-label fw-bold text-muted small text-uppercase ls-1">Foto / Video Bukti Pengiriman (Opsional / Disarankan)</label>
+                    <input type="file" name="video_pengiriman" accept="image/*,video/mp4,video/quicktime,video/x-msvideo" class="form-control border-0 bg-light rounded-3 px-3 py-2 shadow-sm">
+                    <small class="text-muted d-block mt-1">Dapat berupa foto paket dengan label resi atau rekaman video packing (Format: JPG, PNG, MP4. Maks: 20MB).</small>
                     @if($order->video_pengiriman)
-                        <small class="text-success mt-2 d-block"><i class="bi bi-check-circle"></i> Video sudah diunggah</small>
+                        <div class="mt-2 p-2 bg-light rounded-3 border d-flex align-items-center gap-2">
+                            <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                            <div>
+                                <small class="text-success fw-bold d-block">Bukti pengiriman sudah tersimpan:</small>
+                                <a href="{{ asset($order->video_pengiriman) }}" target="_blank" class="small text-primary text-decoration-underline">{{ basename($order->video_pengiriman) }}</a>
+                            </div>
+                        </div>
                     @endif
                 </div>
 
                 <div class="mt-4">
-                    <button class="btn btn-emerald text-white rounded-pill px-5 py-2 fw-bold shadow-sm">
+                    <button type="submit" class="btn btn-emerald text-white rounded-pill px-5 py-2 fw-bold shadow-sm">
                         Simpan Perubahan
                     </button>
                 </div>
