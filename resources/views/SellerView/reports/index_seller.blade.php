@@ -82,11 +82,12 @@
                 </div>
 
                 <h3 class="fw-bold mb-2">Pencairan Dana</h3>
-                <p class="text-muted mb-4">Riwayat dana jual-beli yang ditahan, siap cair, dan sudah dicairkan admin.</p>
+                <p class="text-muted mb-4">Pantau dana jual-beli yang ditahan garansi 2 hari, siap dicairkan, dan cair ke saldo.</p>
 
                 <div class="bg-light p-4 rounded-4 mb-5">
-                    <small class="text-muted text-uppercase fw-bold ls-1 d-block mb-1">Saldo Jual Sudah Cair</small>
+                    <small class="text-muted text-uppercase fw-bold ls-1 d-block mb-1">Total Dana Berhasil Dicairkan</small>
                     <span class="h2 fw-bold text-dark">Rp {{ number_format($totalSales, 0, ',', '.') }}</span>
+                    <small class="text-muted d-block mt-2">Menunggu dicairkan: Rp {{ number_format($pendingSalesPayout, 0, ',', '.') }}</small>
                 </div>
 
                 <a href="{{ route('seller.reports.payouts') }}" class="btn btn-warning flex-grow-1 py-3 rounded-4 fw-bold w-100">

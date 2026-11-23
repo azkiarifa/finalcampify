@@ -1,23 +1,23 @@
 <?php
 
 namespace App\Http\Controllers\SellerController;
-use Illuminate\Support\Facades\Auth;
 
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\SellerModels\Product_seller;
 use App\Models\Store;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class ProductController_seller extends Controller
 {
     /**
-     * Tampilkan semua produk seller login
-     * Kelola Produk = semua produk
+     * Tampilkan semua produk katalog seller (READ-ONLY)
+     * Data produk tersinkronisasi otomatis dari modul Kelola Layanan.
      */
     public function index(Request $request)
     {
-        $query = Product_seller::where('user_id', Auth::id());
+        $query = Product_seller::where('user_id', Auth::id())
+            ->with(['service']);
 
         // filter jenis
         if ($request->filled('jenis')) {
@@ -30,223 +30,74 @@ class ProductController_seller extends Controller
     }
 
     /**
-     * Form tambah produk
+     * Form tambah produk dialihkan ke Kelola Layanan (Centralized Input)
      */
     public function create()
     {
-        return view('SellerView.products.create_seller');
+        return redirect()->route('seller.services.create')
+            ->with('info', 'Input data produk baru kini terpusat melalui menu Kelola Layanan.');
     }
 
     /**
-     * Simpan produk baru ke database
-     * Bisa masuk ke:
-     * - Kelola Produk
-     * - Dashboard
-     * - Penyewaan (jika jenis_produk = sewa)
+     * Simpan produk ditolak langsung demi menjaga integritas data
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'nama_produk'   => 'required|string|max:255',
-            'harga'         => 'required|numeric',
-            'kategori'      => 'required|string|max:255',
-            'jenis_produk'  => 'required|in:jual,sewa',
-            'stok'          => 'required|integer|min:0',
-            'escrow_amount' => 'nullable|numeric|min:0',
-            'deskripsi'     => 'nullable|string',
-            'gambar'        => 'required|image|mimes:jpg,jpeg,png,gif|max:2048',
-        ]);
-
-        // Upload gambar
-        $imagePath = null;
-        if ($request->hasFile('gambar')) {
-            $file = $request->file('gambar');
-            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('assets/images'), $filename);
-            $imagePath = $filename;
-        }
-
-        $flagReasons = \App\Models\Product::flagReasonsFor($request->only(['nama_produk', 'harga', 'deskripsi']));
-        $store = Store::where('user_id', Auth::id())->first();
-
-        // Simpan ke database
-        Product_seller::create([
-            'user_id'       => \Illuminate\Support\Facades\Auth::id(),
-            'store_id'      => $store?->id,
-            'name'          => $request->nama_produk,
-            'nama_produk'   => $request->nama_produk,
-            'description'   => $request->deskripsi,
-            'deskripsi'     => $request->deskripsi,
-            'price'         => $request->harga,
-            'harga'         => $request->harga,
-            'buy_price'     => $request->jenis_produk === 'jual' ? $request->harga : 0,
-            'rent_price'    => $request->jenis_produk === 'sewa' ? $request->harga : 0,
-            'escrow_amount' => $request->jenis_produk === 'sewa' ? ($request->escrow_amount ?? 0) : 0,
-            'category'      => $request->kategori,
-            'kategori'      => $request->kategori,
-            'jenis_produk'  => $request->jenis_produk, // jual / sewa
-            'is_rental'     => $request->jenis_produk === 'sewa',
-            'stock'         => $request->stok,
-            'stok'          => $request->stok,
-            'image'         => $imagePath,
-            'gambar'        => $imagePath,
-            'status'        => 'waiting',
-            'flag_reason'   => $flagReasons ? implode(', ', $flagReasons) : null,
-        ]);
-
-        return redirect()->route('seller.products.index')->with('success', 'Produk berhasil ditambahkan!');
+        return redirect()->route('seller.services.create')
+            ->with('error', 'Penambahan produk harus dilakukan melalui modul Kelola Layanan.');
     }
 
     /**
-     * Form edit produk
+     * Form edit produk DITOLAK (Katalog bersifat Read-Only)
      */
     public function edit(Product_seller $product)
     {
-        // Pastikan hanya owner bisa edit
-        if ($product->user_id !== \Illuminate\Support\Facades\Auth::id()) {
-            abort(403);
+        if ($product->user_id !== Auth::id()) {
+            abort(403, 'Akses tidak diizinkan.');
         }
 
-        return view('SellerView.products.edit_seller', compact('product'));
+        if ($product->service_id) {
+            return redirect()->route('seller.services.edit', $product->service_id)
+                ->with('info', 'Katalog produk bersifat Read-Only. Anda diarahkan ke menu Kelola Layanan untuk mengubah spesifikasi, detail, atau stok.');
+        }
+
+        return redirect()->route('seller.products.index')
+            ->with('error', 'Katalog produk bersifat Read-Only untuk menjaga integritas data riwayat transaksi dan penyewaan. Silakan perbarui harga, spesifikasi, atau stok melalui menu Kelola Layanan.');
     }
 
     /**
-     * Update produk
+     * Update produk DITOLAK (Katalog bersifat Read-Only)
      */
     public function update(Request $request, Product_seller $product)
     {
-        // Cek owner
-        if ($product->user_id !== \Illuminate\Support\Facades\Auth::id()) {
-            abort(403);
-        }
-
-        $request->validate([
-            'nama_produk'   => 'required|string|max:255',
-            'harga'         => 'required|numeric',
-            'kategori'      => 'required|string|max:255',
-            'jenis_produk'  => 'required|in:jual,sewa',
-            'stok'          => 'required|integer|min:0',
-            'escrow_amount' => 'nullable|numeric|min:0',
-            'deskripsi'     => 'nullable|string',
-            'gambar'        => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',
-        ]);
-
-        $data = [
-            'store_id'      => $product->store_id ?: Store::where('user_id', Auth::id())->value('id'),
-            'name'          => $request->nama_produk,
-            'nama_produk'   => $request->nama_produk,
-            'price'         => $request->harga,
-            'harga'         => $request->harga,
-            'buy_price'     => $request->jenis_produk === 'jual' ? $request->harga : 0,
-            'rent_price'    => $request->jenis_produk === 'sewa' ? $request->harga : 0,
-            'escrow_amount' => $request->jenis_produk === 'sewa' ? ($request->escrow_amount ?? 0) : 0,
-            'category'      => $request->kategori,
-            'kategori'      => $request->kategori,
-            'jenis_produk'  => $request->jenis_produk,
-            'is_rental'     => $request->jenis_produk === 'sewa',
-            'stock'         => $request->stok,
-            'stok'          => $request->stok,
-            'description'   => $request->deskripsi,
-            'deskripsi'     => $request->deskripsi,
-        ];
-
-        $flagReasons = \App\Models\Product::flagReasonsFor($data);
-        $data['status'] = 'waiting';
-        $data['flag_reason'] = $flagReasons ? implode(', ', $flagReasons) : null;
-
-        // Jika upload gambar baru
-        if ($request->hasFile('gambar')) {
-
-            // Hapus gambar lama jika ada
-            if ($product->gambar || $product->image) {
-                $oldFilename = $product->gambar ?: $product->image;
-                // Extract just the filename in case it contains old path format
-                $oldFilename = basename($oldFilename);
-                $oldPath = public_path('assets/images/' . $oldFilename);
-                if (file_exists($oldPath)) {
-                    unlink($oldPath);
-                }
-            }
-
-            // Simpan gambar baru
-            $file = $request->file('gambar');
-            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('assets/images'), $filename);
-            $data['gambar'] = $filename;
-            $data['image'] = $filename;
-        }
-
-        $product->update($data);
-
-        return redirect()->route('seller.products.index')->with('success', 'Produk berhasil diupdate!');
+        abort(403, 'Aksi ditolak: Katalog produk bersifat Read-Only. Perubahan harga, detail, dan stok wajib dilakukan melalui modul Kelola Layanan.');
     }
 
     /**
-     * Hapus produk
+     * Hapus produk dialihkan melalui penghapusan layanan terkait
      */
     public function destroy(Product_seller $product)
     {
-        if ($product->user_id !== \Illuminate\Support\Facades\Auth::id()) {
+        if ($product->user_id !== Auth::id()) {
             abort(403);
         }
 
-        // Hapus gambar dari public/assets/images
+        if ($product->service_id) {
+            return redirect()->route('seller.services.index')
+                ->with('error', 'Produk ini terhubung dengan Layanan. Silakan hapus atau nonaktifkan layanan terkait pada menu Kelola Layanan.');
+        }
+
+        // Hapus gambar jika ada
         if ($product->gambar || $product->image) {
-            $filename = $product->gambar ?: $product->image;
-            // Extract just the filename in case it contains old path format
-            $filename = basename($filename);
-            $path = public_path('assets/images/' . $filename);
-            if (file_exists($path)) {
-                unlink($path);
+            $oldFilename = basename($product->gambar ?: $product->image);
+            $oldPath = public_path('assets/images/' . $oldFilename);
+            if (file_exists($oldPath)) {
+                @unlink($oldPath);
             }
         }
 
         $product->delete();
 
-        return redirect()
-            ->route('seller.products.index')
-            ->with('success', 'Produk berhasil dihapus!');
-    }
-
-    /**
-     * Halaman khusus produk sewa
-     * Hanya tampilkan produk dengan jenis_produk = sewa
-     */
-    public function rentals()
-    {
-        $rentals = Product_seller::where('user_id', \Illuminate\Support\Facades\Auth::id())
-                    ->where('jenis_produk', 'sewa')
-                    ->latest()
-                    ->get();
-
-        return view('SellerView.rentals.index_seller', compact('rentals'));
-    }
-
-    /**
-     * Tampilkan detail produk (untuk customer)
-     */
-    public function show(Product_seller $product)
-    {
-        // Ambil rating produk
-        $productRatings = \App\Models\SellerModels\ProductRating_seller::where('product_id', $product->id)
-            ->with('user:id,name')
-            ->orderBy('created_at', 'desc')
-            ->take(10)
-            ->get();
-            
-        $avgProductRating = \App\Models\SellerModels\ProductRating_seller::getAverageRating($product->id);
-        $productRatingCount = \App\Models\SellerModels\ProductRating_seller::getRatingCount($product->id);
-        
-        // Ambil rating toko
-        $storeRatings = \App\Models\SellerModels\StoreRating_seller::where('store_id', $product->user_id)
-            ->with('user:id,name')
-            ->orderBy('created_at', 'desc')
-            ->take(5)
-            ->get();
-            
-        $avgStoreRating = \App\Models\SellerModels\StoreRating_seller::getAverageRating($product->user_id);
-        $storeRatingCount = \App\Models\SellerModels\StoreRating_seller::getRatingCount($product->user_id);
-        
-        return view('SellerView.products.show_seller', compact('product', 'productRatings', 'avgProductRating', 'productRatingCount', 'storeRatings', 'avgStoreRating', 'storeRatingCount'));
+        return redirect()->route('seller.products.index')->with('success', 'Produk berhasil dihapus!');
     }
 }

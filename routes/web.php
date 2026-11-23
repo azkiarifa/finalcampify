@@ -41,6 +41,8 @@ use App\Http\Controllers\SellerController\StoreProfileController_seller;
 use App\Http\Controllers\SellerController\ChatController_seller;
 use App\Http\Controllers\SellerController\RatingController_seller;
 use App\Http\Controllers\SellerController\ReportController_seller;
+use App\Http\Controllers\SellerController\CategoryController_seller;
+use App\Http\Controllers\SellerController\ServiceController_seller;
 
 /*
 |--------------------------------------------------------------------------
@@ -224,7 +226,13 @@ Route::middleware(['auth', 'role:seller'])->prefix('seller')->name('seller.')->g
     Route::get('/dashboard', [DashboardController_seller::class, 'index'])
         ->name('dashboard');
 
-    // Products
+    // 📁 Kelola Kategori (Outdoor Categories)
+    Route::resource('/categories', CategoryController_seller::class);
+
+    // 🛠️ Kelola Layanan (Centralized Service & Specification Management)
+    Route::resource('/services', ServiceController_seller::class);
+
+    // 📦 Katalog Produk (Read-Only Projection)
     Route::resource('/products', ProductController_seller::class);
 
     // Orders
@@ -272,6 +280,7 @@ Route::middleware(['auth', 'role:seller'])->prefix('seller')->name('seller.')->g
     Route::get('/reports/sales', [ReportController_seller::class, 'salesReport'])->name('reports.sales');
     Route::get('/reports/rentals', [ReportController_seller::class, 'rentalReport'])->name('reports.rentals');
     Route::get('/reports/payouts', [ReportController_seller::class, 'payoutReport'])->name('reports.payouts');
+    Route::post('/reports/payouts/{sellerOrder}/claim', [ReportController_seller::class, 'claimToBalance'])->name('reports.payouts.claim');
 
     Route::get('/reports/export-pdf/{type}', [ReportController_seller::class, 'exportPdf'])->name('reports.exportPdf');
 });
@@ -318,3 +327,23 @@ Route::get('/assets/{type}/{path}', function ($type, $path) {
         'Access-Control-Allow-Headers' => 'Content-Type, Accept',
     ]);
 })->where(['type' => '[a-z]+', 'path' => '.*']);
+
+// Fallback for upload files if physically absent on local storage (e.g. from cloud database)
+Route::get('/uploads/{type}/{file}', function ($type, $file) {
+    $path = public_path("uploads/{$type}/{$file}");
+    if (file_exists($path) && is_file($path)) {
+        return response()->file($path);
+    }
+    
+    // Return friendly placeholder image instead of raw 404
+    $cleanName = htmlspecialchars(basename($file));
+    $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="450" height="260" viewBox="0 0 450 260">
+        <rect width="100%" height="100%" rx="12" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+        <circle cx="225" cy="90" r="32" fill="#e2e8f0"/>
+        <path d="M213 85l8-8 16 16m-4-4l5-5 12 12" stroke="#94a3b8" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <text x="50%" y="150" dominant-baseline="middle" text-anchor="middle" fill="#334155" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="600">File Belum Ada di Penyimpanan Lokal</text>
+        <text x="50%" y="175" dominant-baseline="middle" text-anchor="middle" fill="#64748b" font-family="system-ui, -apple-system, sans-serif" font-size="12">Data tercatat di remote DB Supabase</text>
+        <text x="50%" y="205" dominant-baseline="middle" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="11">' . $cleanName . '</text>
+    </svg>';
+    return response($svg, 200, ['Content-Type' => 'image/svg+xml']);
+})->where('file', '.*');

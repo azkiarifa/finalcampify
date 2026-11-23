@@ -52,7 +52,15 @@ class OrderController_seller extends Controller
                   ->orWhere('order_id', $id)
                   ->orWhere('seller_order_number', $id);
             })
-            ->firstOrFail();
+            ->first();
+
+        if (!$order) {
+            $otherOrder = SellerOrder::where('id', $id)->orWhere('order_id', $id)->orWhere('seller_order_number', $id)->first();
+            if ($otherOrder) {
+                return redirect()->route('seller.orders.index')->with('error', 'Pesanan #' . $id . ' terdaftar di toko lain, bukan toko yang sedang aktif.');
+            }
+            return redirect()->route('seller.orders.index')->with('error', 'Pesanan #' . $id . ' tidak ditemukan.');
+        }
 
         // Jika pesanan ini adalah rental dan memiliki data rental, redirect ke detail rental
         if ($order->items->contains('type', 'rent')) {
@@ -73,7 +81,11 @@ class OrderController_seller extends Controller
                   ->orWhere('order_id', $id)
                   ->orWhere('seller_order_number', $id);
             })
-            ->firstOrFail();
+            ->first();
+
+        if (!$order) {
+            return redirect()->route('seller.orders.index')->with('error', 'Pesanan #' . $id . ' tidak ditemukan.');
+        }
 
         return view('SellerView.orders.edit_seller', compact('order'));
     }

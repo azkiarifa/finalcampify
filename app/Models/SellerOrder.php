@@ -43,6 +43,7 @@ class SellerOrder extends Model
         'resi',
         'total',
         'status_label',
+        'bukti_pembayaran',
     ];
 
     public function order()
@@ -125,6 +126,11 @@ class SellerOrder extends Model
     public function getReceiverNameAttribute(): ?string
     {
         return $this->order?->receiver_name;
+    }
+
+    public function getBuktiPembayaranAttribute(): ?string
+    {
+        return $this->attributes['bukti_pembayaran'] ?? $this->order?->bukti_pembayaran;
     }
 
     public function getShippingAddressAttribute(): ?string

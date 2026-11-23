@@ -38,7 +38,17 @@ class Product_seller extends Model
         'flag_reason',
         'reviewed_by',
         'reviewed_at',
+        'service_id',
+        'is_locked',
+        'category_id',
+        'kategori_id',
+        'seller_id',
     ];
+
+    public function service()
+    {
+        return $this->belongsTo(\App\Models\Service::class, 'service_id');
+    }
 
     public function user() {
         return $this->belongsTo(User::class);

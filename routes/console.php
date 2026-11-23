@@ -11,3 +11,7 @@ Artisan::command('inspire', function () {
 Schedule::command('orders:auto-disburse')
     ->dailyAt('00:30')
     ->withoutOverlapping();
+
+Schedule::command('payouts:check-auto-ready')
+    ->hourly()
+    ->withoutOverlapping();

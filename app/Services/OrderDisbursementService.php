@@ -12,7 +12,7 @@ use RuntimeException;
 
 class OrderDisbursementService
 {
-    public const HOLDING_PERIOD_DAYS = 7;
+    public const HOLDING_PERIOD_DAYS = 2; // Jalur otomatis: 2 hari tanpa komplain
 
     public function __construct(private SellerOrderService $sellerOrders)
     {
@@ -43,7 +43,8 @@ class OrderDisbursementService
         $this->applyNotDisbursedFilter($query);
 
         return $query->where('status', SellerOrder::STATUS_DELIVERED)
-            ->whereNotNull('delivered_at');
+            ->whereNotNull('delivered_at')
+            ->whereHas('payout', fn($q) => $q->where('status', Payout::STATUS_READY_TO_DISBURSE));
     }
 
     public function applyStatusFilter(Builder $query, string $status): Builder
@@ -66,22 +67,29 @@ class OrderDisbursementService
     {
         $sellerOrder->loadMissing(['order.buyer', 'store.user', 'seller', 'items.product', 'payout']);
         $payout = $this->sellerOrders->syncPayout($sellerOrder);
-        $readyAt = $sellerOrder->delivered_at?->copy();
-        $daysUntilReady = 0;
+        $readyAt = $payout->ready_at ?? ($sellerOrder->delivered_at ? $sellerOrder->delivered_at->copy()->addDays(self::HOLDING_PERIOD_DAYS) : null);
+        $daysUntilReady = $readyAt && $readyAt->isFuture() ? now()->diffInDays($readyAt, false) + 1 : 0;
 
+        $hasComplaint = $this->sellerOrders->hasActiveComplaint($sellerOrder);
         $statusKey = $payout->status;
         $message = 'Seller order siap dicairkan.';
 
         if ($payout->status === Payout::STATUS_DISBURSED) {
             $message = 'Dana untuk seller order ini sudah dicairkan.';
+        } elseif ($hasComplaint) {
+            $statusKey = Payout::STATUS_WAITING_HOLD;
+            $message = 'Pencairan dana ditahan karena adanya komplain/retur aktif dari pembeli.';
         } elseif ($sellerOrder->status !== SellerOrder::STATUS_DELIVERED || !$sellerOrder->delivered_at) {
             $statusKey = Payout::STATUS_WAITING_DELIVERY;
             $message = 'Seller order belum delivered.';
+        } elseif ($statusKey === Payout::STATUS_WAITING_HOLD) {
+            $message = 'Dana dalam masa hold garansi (2 hari setelah barang diterima).';
         }
 
         return [
             'ready' => $statusKey === Payout::STATUS_READY_TO_DISBURSE,
             'status_key' => $statusKey,
+            'has_complaint' => $hasComplaint,
             'message' => $message,
             'ready_at' => $readyAt,
             'days_until_ready' => $daysUntilReady,
@@ -170,7 +178,8 @@ class OrderDisbursementService
         $this->applyNotDisbursedFilter($query);
 
         return $query->where('status', SellerOrder::STATUS_DELIVERED)
-            ->whereNotNull('delivered_at');
+            ->whereNotNull('delivered_at')
+            ->whereHas('payout', fn($q) => $q->where('status', Payout::STATUS_READY_TO_DISBURSE));
     }
 
     private function applyWaitingHoldOnly(Builder $query): Builder
@@ -178,7 +187,8 @@ class OrderDisbursementService
         $this->applyNotDisbursedFilter($query);
 
         return $query->where('status', SellerOrder::STATUS_DELIVERED)
-            ->whereNotNull('delivered_at');
+            ->whereNotNull('delivered_at')
+            ->whereHas('payout', fn($q) => $q->where('status', Payout::STATUS_WAITING_HOLD));
     }
 
     private function applyWaitingDeliveryOnly(Builder $query): Builder

@@ -13,16 +13,30 @@
         </li>
 
         <li class="nav-item mb-2">
+            <a href="{{ route('seller.categories.index') }}" class="nav-link py-3 rounded-4 d-flex align-items-center {{ request()->routeIs('seller.categories.*') ? 'active active-gradient' : 'text-dark hover-light' }}">
+                <span class="me-3 fs-5">📁</span>
+                <span class="fw-semibold">Kelola Kategori</span>
+            </a>
+        </li>
+
+        <li class="nav-item mb-2">
+            <a href="{{ route('seller.services.index') }}" class="nav-link py-3 rounded-4 d-flex align-items-center {{ request()->routeIs('seller.services.*') ? 'active active-gradient' : 'text-dark hover-light' }}">
+                <span class="me-3 fs-5">🛠️</span>
+                <span class="fw-semibold">Kelola Layanan</span>
+            </a>
+        </li>
+
+        <li class="nav-item mb-2">
             <a href="{{ route('seller.products.index') }}" class="nav-link py-3 rounded-4 d-flex align-items-center {{ request()->routeIs('seller.products.*') ? 'active active-gradient' : 'text-dark hover-light' }}">
                 <span class="me-3 fs-5">📦</span>
-                <span class="fw-semibold">Kelola Produk</span>
+                <span class="fw-semibold">Katalog Produk <small class="badge bg-secondary-subtle text-secondary border ms-1" style="font-size: 0.65rem;">Read-Only</small></span>
             </a>
         </li>
 
         <li class="nav-item mb-2">
             <a href="/seller/ratings" class="nav-link py-3 rounded-4 d-flex align-items-center {{ request()->routeIs('seller.ratings.*') ? 'active active-gradient' : 'text-dark hover-light' }}">
                 <span class="me-3 fs-5">⭐</span>
-                <span class="fw-semibold">Rating Toko</span>
+                <span class="fw-semibold">Rating dan Ulasan</span>
             </a>
         </li>
 
@@ -32,12 +46,26 @@
                 <div class="d-flex align-items-center">
                     <span class="me-3 fs-5">💰</span>
                     <span>Transaksi</span>
+                    @if(($sellerPendingOrdersCount ?? 0) > 0)
+                        <span class="badge rounded-pill bg-danger text-white ms-2 px-2" style="font-size: 0.7rem;">
+                            {{ $sellerPendingOrdersCount }}
+                        </span>
+                    @endif
                 </div>
                 <span class="small opacity-50">▼</span>
             </button>
             <div class="collapse {{ request()->is('seller/orders*') || request()->is('seller/rentals*') ? 'show' : '' }} mt-1" id="transaksi-collapse">
                 <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small ms-5">
-                    <li class="mb-2"><a href="/seller/orders" class="link-dark d-inline-flex text-decoration-none rounded p-2 w-100 {{ request()->is('seller/orders*') ? 'fw-bold text-emerald' : 'text-muted' }}">🧾 Pesanan Baru</a></li>
+                    <li class="mb-2">
+                        <a href="/seller/orders" class="link-dark d-inline-flex justify-content-between align-items-center text-decoration-none rounded p-2 w-100 {{ request()->is('seller/orders*') ? 'fw-bold text-emerald' : 'text-muted' }}">
+                            <span>🧾 Pesanan Baru</span>
+                            @if(($sellerPendingOrdersCount ?? 0) > 0)
+                                <span class="badge rounded-pill bg-danger text-white px-2" style="font-size: 0.7rem;">
+                                    {{ ($sellerPendingOrdersCount ?? 0) > 99 ? '99+' : ($sellerPendingOrdersCount ?? 0) }}
+                                </span>
+                            @endif
+                        </a>
+                    </li>
                     <li class="mb-2"><a href="/seller/rentals" class="link-dark d-inline-flex text-decoration-none rounded p-2 w-100 {{ request()->is('seller/rentals*') ? 'fw-bold text-emerald' : 'text-muted' }}">🏕️ Penyewaan Alat</a></li>
                 </ul>
             </div>

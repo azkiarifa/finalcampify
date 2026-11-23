@@ -39,13 +39,22 @@ class Product extends Model
         'stock',
         'stok',
         'kategori_id',
+        'category_id',
+        'service_id',
+        'is_locked',
     ];
 
     protected $casts = [
         'reviewed_at' => 'datetime',
         'is_rental' => 'boolean',
+        'is_locked' => 'boolean',
         'escrow_amount' => 'integer',
     ];
+
+    public function service()
+    {
+        return $this->belongsTo(\App\Models\Service::class, 'service_id');
+    }
 
     public function seller()
     {

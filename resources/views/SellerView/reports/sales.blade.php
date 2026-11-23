@@ -50,19 +50,19 @@
     </div>
     <div class="col-md-3">
         <div class="card card-modern p-4 border-0">
-            <small class="text-muted text-uppercase fw-bold ls-1 d-block mb-1">Dana Dicairkan</small>
+            <small class="text-muted text-uppercase fw-bold ls-1 d-block mb-1">Total Masuk Saldo</small>
             <h3 class="fw-bold m-0 text-success">Rp {{ number_format($totalDisbursedSales, 0, ',', '.') }}</h3>
             <span class="text-muted small fw-semibold mt-2 d-block">
-                <i class="bi bi-wallet2 me-1"></i> Sudah masuk payout
+                <i class="bi bi-wallet2 me-1"></i> Sudah cair ke saldo
             </span>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card card-modern p-4 border-0">
-            <small class="text-muted text-uppercase fw-bold ls-1 d-block mb-1">Menunggu Pencairan</small>
+            <small class="text-muted text-uppercase fw-bold ls-1 d-block mb-1">Belum Masuk Saldo</small>
             <h3 class="fw-bold m-0 text-warning">Rp {{ number_format($totalWaitingPayout, 0, ',', '.') }}</h3>
             <span class="text-muted small fw-semibold mt-2 d-block">
-                <i class="bi bi-hourglass-split me-1"></i> Belum DISBURSED
+                <i class="bi bi-hourglass-split me-1"></i> Masa hold / Siap cair
             </span>
         </div>
     </div>
@@ -126,10 +126,12 @@
                                 </td>
                                 <td class="text-center">
                                     @if($order->payout?->status === 'DISBURSED')
-                                        Sudah cair
+                                        <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1 small fw-bold">Sudah Cair</span>
                                         <br><small class="text-muted">{{ optional($order->payout?->disbursed_at)->format('d/m/Y') ?? '-' }}</small>
+                                    @elseif($order->payout?->status === 'READY_TO_DISBURSE')
+                                        <span class="badge bg-primary-subtle text-primary rounded-pill px-2 py-1 small fw-bold">Siap Cair</span>
                                     @else
-                                        Belum cair
+                                        <span class="badge bg-light text-muted border rounded-pill px-2 py-1 small">Dalam Hold</span>
                                     @endif
                                 </td>
                                 <td class="text-end fw-bold">Rp {{ number_format($order->total, 0, ',', '.') }}</td>

@@ -49,7 +49,68 @@ class AppServiceProvider extends ServiceProvider
                     ->whereNull('read_at')
                     ->count();
 
-                $view->with('sellerChatUnreadTotal', $sellerChatUnreadTotal);
+                $sellerPendingOrdersCount = \App\Models\SellerOrder::where(function ($query) use ($sellerId) {
+                        $query->where('seller_id', $sellerId)
+                            ->orWhereHas('store', fn ($store) => $store->where('user_id', $sellerId));
+                    })
+                    ->whereIn('status', ['pending', 'menunggu'])
+                    ->whereDoesntHave('order', function ($oq) {
+                        $oq->whereIn('status', ['selesai', 'delivered', 'completed', 'dibatalkan', 'cancelled', 'dikirim', 'shipped']);
+                    })
+                    ->count();
+
+                $view->with([
+                    'sellerChatUnreadTotal' => $sellerChatUnreadTotal,
+                    'sellerPendingOrdersCount' => $sellerPendingOrdersCount,
+                ]);
+            }
+        });
+
+        \Illuminate\Support\Facades\View::composer(['SellerView.layouts.app_seller', 'SellerView.layouts.navbar_seller'], function ($view) {
+            if (auth()->check()) {
+                $sellerId = auth()->id();
+
+                $newOrders = \App\Models\SellerOrder::with(['order.buyer', 'items.product'])
+                    ->where(function ($query) use ($sellerId) {
+                        $query->where('seller_id', $sellerId)
+                            ->orWhereHas('store', fn ($store) => $store->where('user_id', $sellerId));
+                    })
+                    ->whereIn('status', ['pending', 'menunggu'])
+                    ->whereDoesntHave('order', function ($oq) {
+                        $oq->whereIn('status', ['selesai', 'delivered', 'completed', 'dibatalkan', 'cancelled', 'dikirim', 'shipped']);
+                    })
+                    ->latest()
+                    ->take(5)
+                    ->get();
+
+                $newOrdersCount = \App\Models\SellerOrder::where(function ($query) use ($sellerId) {
+                        $query->where('seller_id', $sellerId)
+                            ->orWhereHas('store', fn ($store) => $store->where('user_id', $sellerId));
+                    })
+                    ->whereIn('status', ['pending', 'menunggu'])
+                    ->whereDoesntHave('order', function ($oq) {
+                        $oq->whereIn('status', ['selesai', 'delivered', 'completed', 'dibatalkan', 'cancelled', 'dikirim', 'shipped']);
+                    })
+                    ->count();
+
+                $newRentalsCount = \App\Models\SellerModels\Rental_seller::whereHas('product', function ($query) use ($sellerId) {
+                        $query->where('user_id', $sellerId)
+                            ->orWhereHas('store', fn ($store) => $store->where('user_id', $sellerId));
+                    })
+                    ->where('status', 'pending')
+                    ->whereDoesntHave('order', function ($oq) {
+                        $oq->whereIn('status', ['selesai', 'delivered', 'completed', 'dibatalkan', 'cancelled']);
+                    })
+                    ->count();
+
+                $totalNewOrders = $newOrdersCount + $newRentalsCount;
+
+                $view->with([
+                    'sellerNewOrders' => $newOrders,
+                    'sellerNewOrdersCount' => $totalNewOrders,
+                    'sellerPendingOrdersCount' => $newOrdersCount,
+                    'sellerPendingRentalsCount' => $newRentalsCount,
+                ]);
             }
         });
     }

@@ -19,6 +19,11 @@ class StoreRating_seller extends Model
         'comment',
         'ulasan',
         'reply',
+        'replied_at',
+    ];
+
+    protected $casts = [
+        'replied_at' => 'datetime',
     ];
 
     public function store()
