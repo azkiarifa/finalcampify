@@ -63,11 +63,11 @@
                         Lengkapi persiapan mendaki dan campingmu dengan perlengkapan terbaik. <span class="font-extrabold underline decoration-emerald-400 decoration-2 underline-offset-4" style="color: #ffffff !important;">Sewa hemat harian</span> bergaransi proteksi <span class="font-extrabold underline decoration-emerald-400 decoration-2 underline-offset-4" style="color: #6ee7b7 !important;">escrow</span>, atau <span class="font-extrabold underline decoration-emerald-400 decoration-2 underline-offset-4" style="color: #ffffff !important;">beli perlengkapan original</span> dari mitra toko terpercaya.
                     </p>
 
-                    {{-- Dual CTA Buttons --}}
-                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-10">
+                    {{-- Dual CTA Buttons (Clean, Spacious & Rapi) --}}
+                    <div class="flex flex-wrap items-center gap-4 mb-4">
                         <a href="{{ route('produk.rental') }}" 
                            class="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-full font-bold text-sm sm:text-base shadow-xl transition-all hover:scale-105 active:scale-95"
-                           style="background: #059669 !important; color: #ffffff !important; box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.5) !important;">
+                           style="background: #10b981 !important; color: #ffffff !important; box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.45) !important;">
                             <i data-lucide="tent" class="w-5 h-5"></i>
                             <span>Mulai Sewa Gear</span>
                         </a>
@@ -75,9 +75,28 @@
                         <a href="{{ route('produk.index') }}" 
                            class="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-full font-bold text-sm sm:text-base transition-all hover:scale-105 active:scale-95 shadow-lg"
                            style="background: rgba(255, 255, 255, 0.15) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.35) !important; backdrop-filter: blur(10px);">
-                            <i data-lucide="shopping-bag" class="w-5 h-5" style="color: #34d399 !important;"></i>
+                            <i data-lucide="shopping-bag" class="w-5 h-5" style="color: #6ee7b7 !important;"></i>
                             <span>Beli Perlengkapan</span>
                         </a>
+                    </div>
+
+                    {{-- Dedicated Mobile App Announcement Pill (Tidak Nabrak & Rapi) --}}
+                    <div class="mb-9">
+                        <div class="inline-flex flex-wrap items-center gap-2 sm:gap-2.5 px-4 py-2 rounded-full border shadow-sm text-xs"
+                             style="background: rgba(7, 26, 20, 0.85); border: 1px solid rgba(52, 211, 153, 0.35); backdrop-filter: blur(12px);">
+                            <span class="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span class="font-medium text-slate-300">Aplikasi Android:</span>
+                            <a href="https://drive.usercontent.google.com/download?id=1iQlWXE5wLJI-0OJv83ioRvMOK3ms1xKp&export=download" 
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               title="Download APK Campify untuk Android"
+                               class="font-bold inline-flex items-center gap-1.5 transition-colors underline decoration-emerald-400 decoration-1 underline-offset-4"
+                               style="color: #a7f3d0 !important;">
+                                <i data-lucide="smartphone" class="w-3.5 h-3.5 text-emerald-400"></i>
+                                <span>Download APK (v1.0)</span>
+                                <i data-lucide="download" class="w-3 h-3 text-emerald-400"></i>
+                            </a>
+                        </div>
                     </div>
 
                     {{-- Trust Pillars Strip (Glass Cards Rapi Samping-ke-Samping, 100% Kontras Tinggi) --}}
@@ -520,7 +539,190 @@
         </div>
     </section>
 
-    {{-- ==================== 9. FAQ SECTION ==================== --}}
+    {{-- ==================== 9. MOBILE APP SHOWCASE & DOWNLOAD APK ==================== --}}
+    <section id="download-app" class="py-20 relative overflow-hidden" style="background-color: #071913 !important; color: #ffffff !important;">
+        {{-- Decorative Glow Elements --}}
+        <div class="absolute -top-32 -left-32 w-96 h-96 rounded-full blur-3xl pointer-events-none" style="background: rgba(16, 185, 129, 0.18);"></div>
+        <div class="absolute -bottom-32 -right-32 w-96 h-96 rounded-full blur-3xl pointer-events-none" style="background: rgba(5, 150, 105, 0.2);"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+                
+                {{-- Left Column: Information & Actions --}}
+                <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+                    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold shadow-sm"
+                         style="background: rgba(16, 185, 129, 0.2) !important; color: #34d399 !important; border: 1px solid rgba(52, 211, 153, 0.35) !important;">
+                        <span class="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span>APLIKASI ANDROID (APK RESMI)</span>
+                    </div>
+
+                    <h2 class="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight" style="color: #ffffff !important;">
+                        Petualangan Nyaman, <br class="hidden sm:inline">
+                        <span style="color: #34d399 !important;">
+                            Kini Hadir di Genggaman.
+                        </span>
+                    </h2>
+
+                    <p class="text-sm sm:text-base leading-relaxed max-w-xl mx-auto lg:mx-0 font-normal" style="color: #cbd5e1 !important;">
+                        Nikmati kemudahan sewa gear camping, pantau jadwal rental, cek ketersediaan stok perlengkapan outdoor di kotamu, dan lakukan pembayaran dengan aman langsung dari smartphone Android Anda.
+                    </p>
+
+                    {{-- Feature Highlights --}}
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-2 max-w-xl mx-auto lg:mx-0 text-left">
+                        <div class="p-4 rounded-2xl border" style="background: #0d2820 !important; border-color: rgba(52, 211, 153, 0.25) !important;">
+                            <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold mb-2.5" style="background: rgba(16, 185, 129, 0.25) !important; color: #34d399 !important;">
+                                <i data-lucide="zap" class="w-4 h-4"></i>
+                            </div>
+                            <div class="text-xs font-bold" style="color: #ffffff !important;">Booking Cepat</div>
+                            <div class="text-[11px] mt-0.5" style="color: #94a3b8 !important;">Sewa & beli tanpa ribet</div>
+                        </div>
+
+                        <div class="p-4 rounded-2xl border" style="background: #0d2820 !important; border-color: rgba(52, 211, 153, 0.25) !important;">
+                            <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold mb-2.5" style="background: rgba(16, 185, 129, 0.25) !important; color: #34d399 !important;">
+                                <i data-lucide="bell" class="w-4 h-4"></i>
+                            </div>
+                            <div class="text-xs font-bold" style="color: #ffffff !important;">Notifikasi Real-time</div>
+                            <div class="text-[11px] mt-0.5" style="color: #94a3b8 !important;">Pengingat masa sewa aktif</div>
+                        </div>
+
+                        <div class="p-4 rounded-2xl border" style="background: #0d2820 !important; border-color: rgba(52, 211, 153, 0.25) !important;">
+                            <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold mb-2.5" style="background: rgba(16, 185, 129, 0.25) !important; color: #34d399 !important;">
+                                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                            </div>
+                            <div class="text-xs font-bold" style="color: #ffffff !important;">Proteksi Escrow</div>
+                            <div class="text-[11px] mt-0.5" style="color: #94a3b8 !important;">Deposit jaminan aman 100%</div>
+                        </div>
+                    </div>
+
+                    {{-- Download & QR Code Actions --}}
+                    <div class="pt-4 flex flex-col sm:flex-row items-center gap-5 justify-center lg:justify-start">
+                        <div class="space-y-2.5 w-full sm:w-auto text-center sm:text-left">
+                            {{-- Primary Direct Download Button --}}
+                            <a href="https://drive.usercontent.google.com/download?id=1iQlWXE5wLJI-0OJv83ioRvMOK3ms1xKp&export=download" 
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-full font-extrabold text-base shadow-xl transition-all hover:scale-105 active:scale-95"
+                               style="background: #10b981 !important; color: #ffffff !important; box-shadow: 0 12px 25px -5px rgba(16, 185, 129, 0.5) !important;">
+                                <i data-lucide="download" class="w-5 h-5"></i>
+                                <span>Download APK Android</span>
+                            </a>
+                            
+                            {{-- Backup Google Drive Link --}}
+                            <div class="text-xs" style="color: #94a3b8 !important;">
+                                <span>Kesulitan unduh langsung?</span>
+                                <a href="https://drive.google.com/file/d/1iQlWXE5wLJI-0OJv83ioRvMOK3ms1xKp/view?usp=sharing" 
+                                   target="_blank" 
+                                   rel="noopener noreferrer" 
+                                   class="font-bold hover:underline ml-1"
+                                   style="color: #34d399 !important;">
+                                    Buka via Google Drive ↗
+                                </a>
+                            </div>
+                        </div>
+
+                        {{-- Scan QR Code to Download on Mobile Device --}}
+                        <div class="hidden sm:flex items-center gap-3.5 p-3 rounded-2xl border"
+                             style="background: #0d2820 !important; border-color: rgba(52, 211, 153, 0.25) !important;">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=https%3A%2F%2Fdrive.google.com%2Ffile%2Fd%2F1iQlWXE5wLJI-0OJv83ioRvMOK3ms1xKp%2Fview%3Fusp%3Dsharing" 
+                                 alt="QR Code Download APK Campify" 
+                                 class="w-16 h-16 rounded-xl bg-white p-1 shrink-0">
+                            <div class="text-left">
+                                <div class="text-xs font-bold" style="color: #ffffff !important;">Scan Pakai HP</div>
+                                <div class="text-[10px] max-w-[120px] leading-tight mt-0.5" style="color: #94a3b8 !important;">Arahkan kamera HP Anda untuk download langsung</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Right Column: Modern Smartphone Mockup --}}
+                <div class="lg:col-span-5 flex justify-center relative">
+                    <div class="relative w-64 sm:w-72 rounded-[42px] p-3 shadow-2xl border-2"
+                         style="background: #0b1a15 !important; border-color: #1e3a30 !important; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7) !important;">
+                        
+                        {{-- Phone Notch / Speaker --}}
+                        <div class="w-24 h-3.5 rounded-full mx-auto mb-3 flex items-center justify-center gap-1.5"
+                             style="background: #06110e !important;">
+                            <span class="w-2 h-2 rounded-full" style="background: #142821 !important;"></span>
+                            <span class="w-6 h-1 rounded-full" style="background: #142821 !important;"></span>
+                        </div>
+
+                        {{-- Phone Screen Mockup Content --}}
+                        <div class="rounded-[30px] p-4 text-left space-y-3.5 border"
+                             style="background: #05120d !important; border-color: #163328 !important;">
+                            
+                            {{-- Mockup App Header --}}
+                            <div class="flex items-center justify-between border-b pb-3" style="border-color: #142e24 !important;">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-7 h-7 rounded-lg text-white flex items-center justify-center font-black text-sm"
+                                         style="background: #10b981 !important;">C</div>
+                                    <span class="font-black text-sm" style="color: #ffffff !important;">Campify</span>
+                                </div>
+                                <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full"
+                                      style="background: rgba(16, 185, 129, 0.2) !important; color: #34d399 !important; border: 1px solid rgba(52, 211, 153, 0.35) !important;">v1.0 APK</span>
+                            </div>
+
+                            {{-- Mockup Search Card --}}
+                            <div class="p-2.5 rounded-xl flex items-center gap-2 text-xs border"
+                                 style="background: #0a1f18 !important; border-color: #17382c !important; color: #94a3b8 !important;">
+                                <i data-lucide="search" class="w-3.5 h-3.5" style="color: #34d399 !important;"></i>
+                                <span>Cari tenda dome, carrier...</span>
+                            </div>
+
+                            {{-- Mockup Mini Product Item 1 --}}
+                            <div class="p-2.5 rounded-2xl flex items-center gap-3 border"
+                                 style="background: #0c241c !important; border-color: #183e30 !important;">
+                                <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0"
+                                     style="background: #133529 !important;">
+                                    🏕️
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="text-xs font-bold truncate" style="color: #ffffff !important;">Tenda Dome 4P Pro</div>
+                                    <div class="text-[11px] font-bold mt-0.5" style="color: #34d399 !important;">Rp 45.000 <span class="text-[9px] font-normal" style="color: #94a3b8 !important;">/hari</span></div>
+                                </div>
+                                <span class="text-[10px] px-2 py-0.5 rounded-md font-bold"
+                                      style="background: rgba(16, 185, 129, 0.2) !important; color: #6ee7b7 !important;">Sewa</span>
+                            </div>
+
+                            {{-- Mockup Mini Product Item 2 --}}
+                            <div class="p-2.5 rounded-2xl flex items-center gap-3 border"
+                                 style="background: #0c241c !important; border-color: #183e30 !important;">
+                                <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0"
+                                     style="background: #133529 !important;">
+                                    🎒
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="text-xs font-bold truncate" style="color: #ffffff !important;">Carrier 60L Ultralight</div>
+                                    <div class="text-[11px] font-bold mt-0.5" style="color: #34d399 !important;">Rp 35.000 <span class="text-[9px] font-normal" style="color: #94a3b8 !important;">/hari</span></div>
+                                </div>
+                                <span class="text-[10px] px-2 py-0.5 rounded-md font-bold"
+                                      style="background: rgba(16, 185, 129, 0.2) !important; color: #6ee7b7 !important;">Sewa</span>
+                            </div>
+
+                            {{-- Mockup Escrow Badge --}}
+                            <div class="p-2.5 rounded-xl border flex items-center gap-2.5"
+                                 style="background: rgba(16, 185, 129, 0.12) !important; border-color: rgba(52, 211, 153, 0.3) !important;">
+                                <i data-lucide="shield-check" class="w-4 h-4 shrink-0" style="color: #34d399 !important;"></i>
+                                <div class="text-[10px] leading-tight" style="color: #a7f3d0 !important;">
+                                    <strong class="font-bold" style="color: #ffffff !important;">Proteksi Escrow Aktif</strong>
+                                    - Deposit jaminan aman 100%
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Floating Badges --}}
+                        <div class="mt-3 py-2 px-3 rounded-2xl border flex items-center justify-center gap-2 text-xs"
+                             style="background: #0d2820 !important; border-color: rgba(52, 211, 153, 0.3) !important;">
+                            <span class="text-emerald-400 font-bold">⚡ Ringan & Mudah:</span>
+                            <span class="text-slate-300">Tinggal pasang di Android</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    {{-- ==================== 10. FAQ SECTION ==================== --}}
     <section class="py-16 bg-slate-50 border-t border-slate-100">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
@@ -533,6 +735,15 @@
             </div>
 
             <div class="space-y-4">
+                <div class="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
+                    <h4 class="text-base font-bold text-slate-900 mb-2 flex items-center justify-between">
+                        <span>Bagaimana cara menginstall aplikasi Campify dari file APK?</span>
+                        <i data-lucide="help-circle" class="w-5 h-5 text-emerald-600 shrink-0"></i>
+                    </h4>
+                    <p class="text-xs sm:text-sm text-slate-500 leading-relaxed">
+                        Setelah mendownload file APK dari tombol di atas, buka file tersebut di ponsel Android Anda. Jika muncul pemberitahuan keamanan saat instalasi pertama kali, pilih <strong>"Izinkan instalasi dari sumber ini / sumber tidak dikenal" (Allow from unknown sources)</strong> di pengaturan ponsel Anda, lalu lanjutkan instalasi hingga selesai.
+                    </p>
+                </div>
                 <div class="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
                     <h4 class="text-base font-bold text-slate-900 mb-2 flex items-center justify-between">
                         <span>Apa itu uang jaminan (escrow) saat menyewa alat?</span>

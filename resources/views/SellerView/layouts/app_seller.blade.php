@@ -107,9 +107,73 @@
             </form>
 
             <div class="nav-actions d-flex align-items-center gap-3">
-                <div class="notification-bell position-relative fs-5 text-muted">
-                    <i class="bi bi-bell"></i>
-                    <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+                {{-- NOTIFICATION BELL DROPDOWN --}}
+                <div class="dropdown">
+                    <button class="btn btn-link text-muted p-1 position-relative fs-5 text-decoration-none shadow-none border-0" type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifikasi Pesanan">
+                        <i class="bi bi-bell fs-4"></i>
+                        @if(($sellerNewOrdersCount ?? 0) > 0)
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-white" style="font-size: 0.65rem;">
+                                {{ ($sellerNewOrdersCount ?? 0) > 99 ? '99+' : ($sellerNewOrdersCount ?? 0) }}
+                            </span>
+                        @endif
+                    </button>
+                    
+                    <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 p-0 mt-3" aria-labelledby="notificationDropdown" style="width: 360px; max-width: 90vw; z-index: 1050;">
+                        <div class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center rounded-top-4">
+                            <div>
+                                <h6 class="fw-bold m-0 text-dark">Notifikasi Pesanan</h6>
+                                <small class="text-muted">{{ ($sellerNewOrdersCount ?? 0) > 0 ? ($sellerNewOrdersCount ?? 0) . ' pesanan baru perlu diproses' : 'Semua pesanan sudah diproses' }}</small>
+                            </div>
+                            @if(($sellerNewOrdersCount ?? 0) > 0)
+                                <span class="badge bg-danger rounded-pill px-2 py-1 small">Baru</span>
+                            @endif
+                        </div>
+
+                        <div class="notification-list p-2" style="max-height: 380px; overflow-y: auto;">
+                            @if(isset($sellerNewOrders) && $sellerNewOrders->count() > 0)
+                                @foreach($sellerNewOrders as $newOrder)
+                                    @php
+                                        $buyerName = $newOrder->order?->buyer?->name ?? $newOrder->order?->receiver_name ?? 'Pelanggan';
+                                        $firstProduct = $newOrder->items->first()?->product?->nama_produk ?? $newOrder->items->first()?->product?->name ?? 'Produk Outdoor';
+                                        $itemCount = $newOrder->items->count();
+                                    @endphp
+                                    <a href="{{ route('seller.orders.show', $newOrder->id) }}" class="dropdown-item p-3 rounded-3 mb-1 text-wrap d-flex align-items-start gap-3 hover-light">
+                                        <div class="avatar-icon bg-emerald-subtle text-emerald rounded-circle p-2 flex-shrink-0 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                                            <i class="bi bi-bag-check-fill fs-5"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <span class="fw-bold text-dark small text-truncate" style="max-width: 140px;">{{ $buyerName }}</span>
+                                                <small class="text-muted" style="font-size: 0.7rem;">{{ $newOrder->created_at?->diffForHumans() }}</small>
+                                            </div>
+                                            <p class="m-0 text-muted small" style="line-height: 1.3;">
+                                                {{ Str::limit($firstProduct, 30) }} {{ $itemCount > 1 ? '(+' . ($itemCount - 1) . ' item lain)' : '' }}
+                                            </p>
+                                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                                <span class="fw-bold text-emerald small">Rp {{ number_format($newOrder->subtotal ?: ($newOrder->order?->total_amount ?? 0), 0, ',', '.') }}</span>
+                                                <span class="badge bg-warning text-dark rounded-pill" style="font-size: 0.65rem;">Perlu Diproses</span>
+                                            </div>
+                                        </div>
+                                    </a>
+                                @endforeach
+                            @else
+                                <div class="p-4 text-center text-muted">
+                                    <div class="fs-1 opacity-25 mb-2">🎉</div>
+                                    <p class="small fw-semibold m-0">Tidak ada pesanan baru</p>
+                                    <small class="text-muted">Pesanan baru akan muncul di sini saat pembeli melakukan checkout.</small>
+                                </div>
+                            @endif
+                        </div>
+
+                        <div class="p-2 border-top bg-light rounded-bottom-4 d-flex justify-content-between gap-1">
+                            <a href="/seller/orders" class="btn btn-sm btn-link text-emerald fw-bold text-decoration-none w-50 text-center py-2">
+                                <i class="bi bi-receipt me-1"></i>Pesanan Baru
+                            </a>
+                            <a href="/seller/rentals" class="btn btn-sm btn-link text-muted fw-bold text-decoration-none w-50 text-center py-2">
+                                <i class="bi bi-calendar-range me-1"></i>Penyewaan
+                            </a>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="vr mx-2 opacity-10"></div>

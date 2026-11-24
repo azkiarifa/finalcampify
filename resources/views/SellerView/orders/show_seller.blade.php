@@ -664,16 +664,37 @@
                 </div>
             </div>
 
-            @if($order->bukti_pembayaran)
+            @php
+                $buktiBayar = $order->bukti_pembayaran ?: ($order->order?->bukti_pembayaran ?? null);
+                $isBuktiExists = $buktiBayar && file_exists(public_path($buktiBayar));
+            @endphp
+
+            @if($buktiBayar)
             <div class="bg-light rounded-4 p-3 text-center border dashed">
-                <small class="text-muted d-block mb-2 fw-bold text-uppercase ls-1">Bukti Pembayaran</small>
-                <a href="{{ asset($order->bukti_pembayaran) }}" target="_blank">
-                    <img src="{{ asset($order->bukti_pembayaran) }}" class="img-fluid rounded-3 shadow-sm" style="max-height: 200px;">
-                </a>
+                <small class="text-muted d-block mb-2 fw-bold text-uppercase ls-1">Bukti Pembayaran (Transfer)</small>
+                @if($isBuktiExists)
+                    <a href="{{ asset($buktiBayar) }}" target="_blank" class="d-inline-block">
+                        <img src="{{ asset($buktiBayar) }}" class="img-fluid rounded-3 shadow-sm border" style="max-height: 220px; object-fit: contain;" alt="Bukti Pembayaran">
+                    </a>
+                    <div class="mt-3">
+                        <a href="{{ asset($buktiBayar) }}" target="_blank" class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold">
+                            <i class="bi bi-box-arrow-up-right me-1"></i> Buka Gambar Penuh
+                        </a>
+                    </div>
+                @else
+                    <div class="p-3 bg-white rounded-3 border text-center">
+                        <i class="bi bi-cloud-check-fill fs-2 text-primary mb-2 d-block"></i>
+                        <span class="fw-bold d-block text-dark small mb-1">Bukti Tercatat di Database</span>
+                        <code class="d-block small text-break mb-2 text-muted" style="font-size: 0.72rem;">{{ $buktiBayar }}</code>
+                        <div class="alert alert-info py-2 px-3 small border-0 rounded-3 mb-0" style="font-size: 0.75rem;">
+                            <i class="bi bi-info-circle me-1"></i> File gambar tersimpan di database remote (Supabase). Saat testing di server lokal file ini belum disinkronkan ke folder <code>public/uploads</code>.
+                        </div>
+                    </div>
+                @endif
             </div>
             @else
             <div class="alert alert-warning small rounded-4 border-0 m-0">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i> Bukti pembayaran belum diunggah.
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> Bukti pembayaran belum diunggah oleh pembeli.
             </div>
             @endif
         </div>

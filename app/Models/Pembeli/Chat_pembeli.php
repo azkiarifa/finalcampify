@@ -24,6 +24,11 @@ class Chat_pembeli extends Model
         'is_flagged',
     ];
 
+    protected $casts = [
+        'is_read' => 'boolean',
+        'is_flagged' => 'boolean',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User_pembeli::class, 'user_id');

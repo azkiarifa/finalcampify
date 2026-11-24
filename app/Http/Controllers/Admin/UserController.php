@@ -26,8 +26,8 @@ class UserController extends Controller
             ->latest();
 
         $users = $query->paginate(10)->withQueryString();
-        $roleCounts = User::selectRaw('COALESCE(role, "buyer") as role_name, COUNT(*) as total')
-            ->groupByRaw('COALESCE(role, "buyer")')
+        $roleCounts = User::selectRaw("COALESCE(role, 'buyer') as role_name, COUNT(*) as total")
+            ->groupByRaw("COALESCE(role, 'buyer')")
             ->pluck('total', 'role_name');
 
         return view('admin.users', compact('users', 'roleCounts'));

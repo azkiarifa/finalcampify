@@ -122,7 +122,7 @@ class ReportController_seller extends Controller
         ));
     }
 
-    public function payoutReport(Request $request)
+    public function payoutReport(Request $request, \App\Services\SellerOrderService $sellerOrderService)
     {
         $sellerId = Auth::id();
         $status = $request->get('status');
@@ -132,6 +132,15 @@ class ReportController_seller extends Controller
             Payout::STATUS_READY_TO_DISBURSE,
             Payout::STATUS_DISBURSED,
         ];
+
+        // Otomatis sinkronkan status payout terbaru untuk pesanan delivered (Jalur 2-3 hari)
+        $deliveredOrders = $this->sellerPurchaseOrdersQuery($sellerId)
+            ->where('status', SellerOrder::STATUS_DELIVERED)
+            ->whereNotNull('delivered_at')
+            ->get();
+        foreach ($deliveredOrders as $do) {
+            $sellerOrderService->syncPayout($do);
+        }
 
         $query = $this->sellerPurchaseOrdersQuery($sellerId)
             ->whereHas('payout');
@@ -163,6 +172,42 @@ class ReportController_seller extends Controller
             'totalReady',
             'totalWaiting'
         ));
+    }
+
+    public function claimToBalance(SellerOrder $sellerOrder, \App\Services\SellerOrderService $sellerOrderService)
+    {
+        $sellerId = Auth::id();
+
+        if ($sellerOrder->seller_id !== $sellerId && $sellerOrder->store?->user_id !== $sellerId) {
+            return back()->with('error', 'Akses ditolak. Pesanan bukan milik toko Anda.');
+        }
+
+        if ($sellerOrderService->hasActiveComplaint($sellerOrder)) {
+            return back()->with('error', 'Pencairan dana ditahan karena adanya komplain atau retur aktif dari pembeli.');
+        }
+
+        $payout = $sellerOrderService->syncPayout($sellerOrder);
+
+        if (!$payout || $payout->status !== Payout::STATUS_READY_TO_DISBURSE) {
+            return back()->with('error', 'Dana pesanan ini belum siap dicairkan (masih dalam masa garansi 2 hari atau belum diterima pembeli).');
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($payout, $sellerOrder) {
+            $payout->update([
+                'status' => Payout::STATUS_DISBURSED,
+                'disbursed_at' => now(),
+                'source' => 'seller_claim',
+            ]);
+
+            if (\Illuminate\Support\Facades\Schema::hasColumn('stores', 'saldo')) {
+                $sellerOrder->store?->increment('saldo', $payout->amount);
+            }
+        });
+
+        $orderNumber = $sellerOrder->seller_order_number ?? '#' . $sellerOrder->id;
+        $amountFmt = number_format($payout->amount ?? $sellerOrder->subtotal, 0, ',', '.');
+
+        return back()->with('success', "Dana pesanan {$orderNumber} sebesar Rp {$amountFmt} berhasil dicairkan ke saldo toko Anda!");
     }
 
     /*

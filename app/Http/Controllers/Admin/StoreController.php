@@ -111,6 +111,10 @@ class StoreController extends Controller
             'reviewed_at' => now(),
         ]);
 
+        if ($product->service_id) {
+            \App\Models\Service::where('id', $product->service_id)->update(['status' => 'active']);
+        }
+
         return back()->with('success', 'Produk disetujui.');
     }
 
@@ -124,6 +128,10 @@ class StoreController extends Controller
             'reviewed_by' => \Illuminate\Support\Facades\Auth::id(),
             'reviewed_at' => now(),
         ]);
+
+        if ($product->service_id) {
+            \App\Models\Service::where('id', $product->service_id)->update(['status' => 'rejected']);
+        }
 
         return back()->with('success', 'Produk ditolak.');
     }

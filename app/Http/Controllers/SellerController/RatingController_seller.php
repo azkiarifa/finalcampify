@@ -218,7 +218,10 @@ class RatingController_seller extends Controller
             return back()->with('error', 'Anda tidak memiliki akses untuk membalas ulasan ini.');
         }
 
-        $rating->update(['reply' => $request->reply]);
+        $rating->update([
+            'reply' => $request->reply,
+            'replied_at' => now(),
+        ]);
 
         return back()->with('success', 'Balasan berhasil dikirim!');
     }
@@ -242,7 +245,10 @@ class RatingController_seller extends Controller
             return back()->with('error', 'Anda tidak memiliki akses untuk membalas ulasan ini.');
         }
 
-        $rating->update(['reply' => $request->reply]);
+        $rating->update([
+            'reply' => $request->reply,
+            'replied_at' => now(),
+        ]);
 
         return back()->with('success', 'Balasan berhasil dikirim!');
     }

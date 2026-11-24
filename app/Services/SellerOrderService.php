@@ -32,11 +32,24 @@ class SellerOrderService
             $sellerId = $store?->user_id ?? $product?->sellerUserId();
             $subtotal = (int) $items->sum(fn($item) => ((int) $item->harga) * ((int) $item->qty));
 
-            $sellerOrder = SellerOrder::query()
-                ->where('order_id', $order->id)
-                ->when($storeId, fn($query) => $query->where('store_id', $storeId), fn($query) => $query->whereNull('store_id'))
-                ->when($sellerId, fn($query) => $query->where('seller_id', $sellerId), fn($query) => $query->whereNull('seller_id'))
-                ->first();
+            // Cek apakah item dalam pesanan ini sudah memiliki SellerOrder sebelumnya
+            $existingSellerOrderId = SellerOrderItem::whereIn('order_detail_id', $items->pluck('id'))->value('seller_order_id');
+            $sellerOrder = $existingSellerOrderId ? SellerOrder::find($existingSellerOrderId) : null;
+
+            if (!$sellerOrder) {
+                $sellerOrder = SellerOrder::query()
+                    ->where('order_id', $order->id)
+                    ->where(function ($q) use ($storeId, $sellerId) {
+                        if ($storeId && $sellerId) {
+                            $q->where('store_id', $storeId)->orWhere('seller_id', $sellerId);
+                        } elseif ($storeId) {
+                            $q->where('store_id', $storeId);
+                        } elseif ($sellerId) {
+                            $q->where('seller_id', $sellerId);
+                        }
+                    })
+                    ->first();
+            }
 
             if (!$sellerOrder) {
                 $sellerOrder = new SellerOrder([
@@ -53,12 +66,17 @@ class SellerOrderService
                 ]);
             }
 
-            $sellerOrder->fill([
-                'store_id' => $storeId,
-                'seller_id' => $sellerId,
+            $fillData = [
                 'subtotal' => $subtotal,
-            ]);
+            ];
+            if ($storeId && empty($sellerOrder->store_id)) {
+                $fillData['store_id'] = $storeId;
+            }
+            if ($sellerId && empty($sellerOrder->seller_id)) {
+                $fillData['seller_id'] = $sellerId;
+            }
 
+            $sellerOrder->fill($fillData);
             $sellerOrder->save();
 
             if (!$sellerOrder->seller_order_number) {
@@ -70,10 +88,10 @@ class SellerOrderService
             foreach ($items as $item) {
                 SellerOrderItem::updateOrCreate(
                     [
-                        'seller_order_id' => $sellerOrder->id,
                         'order_detail_id' => $item->id,
                     ],
                     [
+                        'seller_order_id' => $sellerOrder->id,
                         'product_id' => $item->product_id,
                         'qty' => (int) $item->qty,
                         'harga' => (int) $item->harga,
@@ -91,6 +109,8 @@ class SellerOrderService
         return $sellerOrders;
     }
 
+    public const HOLDING_HOURS = 48; // 2 hari masa hold tanpa komplain
+
     public function markDelivered(SellerOrder $sellerOrder): SellerOrder
     {
         $sellerOrder->forceFill([
@@ -106,11 +126,16 @@ class SellerOrderService
 
     public function syncPayout(SellerOrder $sellerOrder): Payout
     {
-        $readyAt = $sellerOrder->delivered_at?->copy();
         $existing = $sellerOrder->payout;
-        $status = $existing?->status === Payout::STATUS_DISBURSED
-            ? Payout::STATUS_DISBURSED
-            : $this->payoutStatus($sellerOrder, $readyAt);
+        if ($existing?->status === Payout::STATUS_DISBURSED) {
+            return $existing;
+        }
+
+        $readyAt = $sellerOrder->delivered_at
+            ? $sellerOrder->delivered_at->copy()->addHours(self::HOLDING_HOURS)
+            : null;
+
+        $status = $this->payoutStatus($sellerOrder, $readyAt, $existing);
 
         return Payout::updateOrCreate(
             ['seller_order_id' => $sellerOrder->id],
@@ -194,15 +219,35 @@ class SellerOrderService
         };
     }
 
-    private function payoutStatus(SellerOrder $sellerOrder, $readyAt): string
+    public function hasActiveComplaint(SellerOrder $sellerOrder): bool
+    {
+        return \App\Models\SellerModels\Return_seller::where('order_id', $sellerOrder->order_id)
+            ->whereIn('status', ['pending', 'review', 'in_progress', 'approved_by_seller', 'refund_pending'])
+            ->exists();
+    }
+
+    private function payoutStatus(SellerOrder $sellerOrder, $readyAt, ?Payout $existing = null): string
     {
         if ($sellerOrder->status !== SellerOrder::STATUS_DELIVERED || !$sellerOrder->delivered_at) {
             return Payout::STATUS_WAITING_DELIVERY;
         }
 
-        return $readyAt && $readyAt->isFuture()
-            ? Payout::STATUS_WAITING_HOLD
-            : Payout::STATUS_READY_TO_DISBURSE;
+        // Jalur Penahanan Komplain: Jika ada komplain aktif, dana ditahan sementara
+        if ($this->hasActiveComplaint($sellerOrder)) {
+            return Payout::STATUS_WAITING_HOLD;
+        }
+
+        // Jalur Admin: Jika admin sudah pernah menyetujui menjadi READY_TO_DISBURSE
+        if ($existing && $existing->status === Payout::STATUS_READY_TO_DISBURSE) {
+            return Payout::STATUS_READY_TO_DISBURSE;
+        }
+
+        // Jalur Otomatis: 2 hari (48 jam) tanpa komplain
+        if ($readyAt && $readyAt->isPast()) {
+            return Payout::STATUS_READY_TO_DISBURSE;
+        }
+
+        return Payout::STATUS_WAITING_HOLD;
     }
 
     private function sellerOrderNumber(int $id): string

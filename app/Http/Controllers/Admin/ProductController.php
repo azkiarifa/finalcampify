@@ -91,21 +91,33 @@ class ProductController extends Controller
 
     public function approve($id)
     {
-        Product::findOrFail($id)->update([
+        $product = Product::findOrFail($id);
+        $product->update([
             'status' => 'approved',
             'reviewed_by' => \Illuminate\Support\Facades\Auth::id(),
             'reviewed_at' => now(),
         ]);
+
+        if ($product->service_id) {
+            \App\Models\Service::where('id', $product->service_id)->update(['status' => 'active']);
+        }
+
         return back();
     }
 
     public function reject($id)
     {
-        Product::findOrFail($id)->update([
+        $product = Product::findOrFail($id);
+        $product->update([
             'status' => 'rejected',
             'reviewed_by' => \Illuminate\Support\Facades\Auth::id(),
             'reviewed_at' => now(),
         ]);
+
+        if ($product->service_id) {
+            \App\Models\Service::where('id', $product->service_id)->update(['status' => 'rejected']);
+        }
+
         return back();
     }
 }

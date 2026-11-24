@@ -4,7 +4,7 @@
 <div class="dashboard-header mb-5">
     <div class="row align-items-center">
         <div class="col-md-8">
-            <h2 class="fw-bold m-0 text-dark">Rating & Ulasan</h2>
+            <h2 class="fw-bold m-0 text-dark">Rating dan Ulasan</h2>
             <p class="text-muted">Lihat apa yang pelanggan katakan tentang produk dan layanan Anda.</p>
         </div>
         <div class="col-md-4 text-md-end">
@@ -82,9 +82,16 @@
 
                     @if($rating->reply)
                     <div class="ms-5 mt-3 p-3 bg-emerald-soft rounded-4" style="border-left: 4px solid var(--primary-emerald); border-top: none; border-right: none; border-bottom: none;">
-                        <div class="d-flex align-items-center gap-2 mb-2">
-                            <span class="badge bg-emerald text-white rounded-pill px-2" style="background: var(--primary-emerald); font-size: 0.7rem;">Penjual</span>
-                            <small class="fw-bold text-muted" style="font-size: 0.8rem;">Balasan Anda:</small>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-emerald text-white rounded-pill px-2" style="background: var(--primary-emerald); font-size: 0.7rem;">Penjual</span>
+                                <small class="fw-bold text-muted" style="font-size: 0.8rem;">Balasan Anda:</small>
+                            </div>
+                            @if($rating->replied_at || $rating->updated_at)
+                                <small class="text-muted" style="font-size: 0.75rem;">
+                                    <i class="bi bi-clock me-1 text-emerald"></i>Dijawab: {{ \Carbon\Carbon::parse($rating->replied_at ?? $rating->updated_at)->format('d M Y, H:i') }} WIB
+                                </small>
+                            @endif
                         </div>
                         <p class="m-0 small text-dark leading-relaxed">{{ $rating->reply }}</p>
                     </div>
@@ -146,9 +153,16 @@
 
                     @if($rating->reply)
                     <div class="ms-5 mt-3 p-3 bg-emerald-soft rounded-4" style="border-left: 4px solid var(--primary-emerald); border-top: none; border-right: none; border-bottom: none;">
-                        <div class="d-flex align-items-center gap-2 mb-2">
-                            <span class="badge bg-emerald text-white rounded-pill px-2" style="background: var(--primary-emerald); font-size: 0.7rem;">Penjual</span>
-                            <small class="fw-bold text-muted" style="font-size: 0.8rem;">Balasan Anda:</small>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-emerald text-white rounded-pill px-2" style="background: var(--primary-emerald); font-size: 0.7rem;">Penjual</span>
+                                <small class="fw-bold text-muted" style="font-size: 0.8rem;">Balasan Anda:</small>
+                            </div>
+                            @if($rating->replied_at || $rating->updated_at)
+                                <small class="text-muted" style="font-size: 0.75rem;">
+                                    <i class="bi bi-clock me-1 text-emerald"></i>Dijawab: {{ \Carbon\Carbon::parse($rating->replied_at ?? $rating->updated_at)->format('d M Y, H:i') }} WIB
+                                </small>
+                            @endif
                         </div>
                         <p class="m-0 small text-dark leading-relaxed">{{ $rating->reply }}</p>
                     </div>

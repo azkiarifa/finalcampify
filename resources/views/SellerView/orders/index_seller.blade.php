@@ -82,7 +82,12 @@
                         default => 'Belum Cair'
                     };
                 @endphp
-                <div class="d-flex gap-2 flex-wrap justify-content-end">
+                <div class="d-flex gap-2 flex-wrap justify-content-end align-items-center">
+                    @if($order->bukti_pembayaran)
+                        <span class="badge rounded-pill px-3 py-2 fw-semibold bg-success-subtle text-success border border-success-subtle small">
+                            <i class="bi bi-receipt me-1"></i>Bukti Transfer Ada
+                        </span>
+                    @endif
                     <span class="badge rounded-pill px-4 py-2 fw-bold text-uppercase ls-1 {{ $statusClass }}">
                         {{ $order->status_label }}
                     </span>

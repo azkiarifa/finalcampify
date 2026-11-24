@@ -18,6 +18,11 @@ class Chat extends Model
         'is_flagged'
     ];
 
+    protected $casts = [
+        'is_read' => 'boolean',
+        'is_flagged' => 'boolean',
+    ];
+
     // relasi ke user
     public function user()
     {

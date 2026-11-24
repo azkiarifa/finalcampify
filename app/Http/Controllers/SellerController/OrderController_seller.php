@@ -52,7 +52,15 @@ class OrderController_seller extends Controller
                   ->orWhere('order_id', $id)
                   ->orWhere('seller_order_number', $id);
             })
-            ->firstOrFail();
+            ->first();
+
+        if (!$order) {
+            $otherOrder = SellerOrder::where('id', $id)->orWhere('order_id', $id)->orWhere('seller_order_number', $id)->first();
+            if ($otherOrder) {
+                return redirect()->route('seller.orders.index')->with('error', 'Pesanan #' . $id . ' terdaftar di toko lain, bukan toko yang sedang aktif.');
+            }
+            return redirect()->route('seller.orders.index')->with('error', 'Pesanan #' . $id . ' tidak ditemukan.');
+        }
 
         // Jika pesanan ini adalah rental dan memiliki data rental, redirect ke detail rental
         if ($order->items->contains('type', 'rent')) {
@@ -73,7 +81,11 @@ class OrderController_seller extends Controller
                   ->orWhere('order_id', $id)
                   ->orWhere('seller_order_number', $id);
             })
-            ->firstOrFail();
+            ->first();
+
+        if (!$order) {
+            return redirect()->route('seller.orders.index')->with('error', 'Pesanan #' . $id . ' tidak ditemukan.');
+        }
 
         return view('SellerView.orders.edit_seller', compact('order'));
     }
@@ -112,6 +124,11 @@ class OrderController_seller extends Controller
         $status = $statusMap[$request->status] ?? $request->status;
         $resi = $request->resi ?? $request->no_resi;
 
+        // Jika mengubah status menjadi Dikirim, pastikan nomor resi terisi
+        if ($status === SellerOrder::STATUS_SHIPPED && empty($resi)) {
+            return back()->with('error', 'Nomor resi pengiriman wajib diisi saat mengubah status pesanan menjadi Dikirim.')->withInput();
+        }
+
         $updateData = [
             'status' => $status,
             'no_resi' => $resi,
@@ -119,13 +136,15 @@ class OrderController_seller extends Controller
             'delivered_at' => $status === SellerOrder::STATUS_DELIVERED ? ($order->delivered_at ?? now()) : $order->delivered_at,
         ];
 
-        // If status changing to 'dikirim' or already 'dikirim'/'selesai' and a video is uploaded
+        // Jika ada file bukti pengiriman (foto atau video) yang diunggah
         if ($request->hasFile('video_pengiriman')) {
             $file = $request->file('video_pengiriman');
             $updateData['video_pengiriman_hash'] = md5_file($file->getRealPath());
-            $filename = 'kirim_' . time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('assets/videos'), $filename);
-            $updateData['video_pengiriman'] = 'assets/videos/' . $filename;
+            $ext = strtolower($file->getClientOriginalExtension());
+            $filename = 'kirim_' . time() . '_' . uniqid() . '.' . $ext;
+            $dest = in_array($ext, ['mp4', 'mov', 'avi', 'webm', 'mkv']) ? 'assets/videos' : 'assets/images';
+            $file->move(public_path($dest), $filename);
+            $updateData['video_pengiriman'] = $dest . '/' . $filename;
         } else if ($status === SellerOrder::STATUS_SHIPPED && !$order->video_pengiriman) {
              return back()->with('error', 'Foto/Video bukti pengiriman wajib diunggah saat mengubah status menjadi Dikirim.');
         }
