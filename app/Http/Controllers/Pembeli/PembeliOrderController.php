@@ -210,14 +210,28 @@ class PembeliOrderController extends Controller
             }
         }
 
-        // --- Alur Retur Jual Beli / Buy Return (Sesuai BPMN) ---
-        $request->validate([
+        // --- Alur Retur Jual Beli / Buy Return (Sesuai BPMN & Pilihan Solusi) ---
+        $resolutionType = $request->input('resolution_type', 'refund');
+        
+        $rules = [
+            'resolution_type' => 'required|in:refund,replacement',
             'foto_kondisi' => 'required|file|mimes:jpg,jpeg,png,webp,mp4,mov,avi|max:10240',
             'alasan_return' => 'required|string|max:500',
-            'buyer_refund_bank_name' => 'required|string|max:255',
-            'buyer_refund_bank_account' => 'required|string|max:255',
-            'buyer_refund_bank_name_owner' => 'required|string|max:255',
-        ]);
+        ];
+
+        if ($resolutionType === 'refund') {
+            $rules['buyer_refund_bank_name'] = 'required|string|max:255';
+            $rules['buyer_refund_bank_account'] = 'required|string|max:255';
+            $rules['buyer_refund_bank_name_owner'] = 'required|string|max:255';
+        } else {
+            $rules['kurir_return'] = 'nullable|string|max:100';
+            $rules['resi_return'] = 'nullable|string|max:255';
+            $rules['buyer_refund_bank_name'] = 'nullable|string|max:255';
+            $rules['buyer_refund_bank_account'] = 'nullable|string|max:255';
+            $rules['buyer_refund_bank_name_owner'] = 'nullable|string|max:255';
+        }
+
+        $request->validate($rules);
 
         $fotoKondisiPath = null;
         if ($request->hasFile('foto_kondisi')) {
@@ -244,15 +258,19 @@ class PembeliOrderController extends Controller
 
         $return->fill([
             'rental_id' => null,
-            'resi_return' => null,
+            'resolution_type' => $resolutionType,
+            'resi_return' => $request->resi_return ?: null,
+            'kurir_return' => $request->kurir_return ?: 'J&T Express',
+            'booking_code_return' => $request->booking_code_return ?: null,
+            'ongkir_bearer' => 'seller',
             'proof_returned_image' => $fotoKondisiPath,
             'tanggal_pengembalian' => now(),
             'actual_date' => now(),
             'denda' => 0,
-            'kondisi_barang' => $detail->type === 'buy' ? 'belum_dicek' : 'baik',
+            'kondisi_barang' => 'belum_dicek',
             'status' => 'pending',
             'escrow_total' => (string) ($detail->type === 'buy' ? ($detail->harga * $detail->qty) : ($pesanan->total ?? 0)),
-            'expected_date' => $detail->type === 'rent' ? (isset($endDate) ? $endDate : null) : null,
+            'expected_date' => null,
             'late_fee' => '0',
             'damage_fee' => '0',
             'to_seller' => '0',
@@ -267,9 +285,13 @@ class PembeliOrderController extends Controller
         $pesanan->status = 'retur';
         $pesanan->save();
 
+        $msgSuccess = $resolutionType === 'refund' 
+            ? 'Pengajuan Refund Dana berhasil dikirim. Menunggu persetujuan penjual.' 
+            : 'Pengajuan Retur Barang (Tukar Pengganti) berhasil dikirim. Menunggu persetujuan penjual.';
+
         return redirect()
             ->route('orders.detail', $pesanan->id)
-            ->with('success', 'Permintaan retur berhasil dikirim. Menunggu konfirmasi penjual.');
+            ->with('success', $msgSuccess);
     }
 
     public function submitShipping(Request $request, $return_id)
@@ -283,6 +305,7 @@ class PembeliOrderController extends Controller
 
         $request->validate([
             'resi_return' => 'required|string|max:255',
+            'kurir_return' => 'nullable|string|max:100',
             'foto_kondisi' => 'required|file|mimes:jpg,jpeg,png,webp,mp4,mov,avi|max:10240',
             'renter_notes' => 'nullable|string|max:500',
         ]);
@@ -303,8 +326,11 @@ class PembeliOrderController extends Controller
 
         $return->update([
             'resi_return' => $request->resi_return,
-            'proof_returned_image' => $fotoKondisiPath,
-            'renter_notes' => $request->renter_notes,
+            'kurir_return' => $request->kurir_return ?: ($return->kurir_return ?: 'J&T Express'),
+            'booking_code_return' => $request->booking_code_return ?: $return->booking_code_return,
+            'ongkir_bearer' => 'seller',
+            'proof_returned_image' => $fotoKondisiPath ?: $return->proof_returned_image,
+            'renter_notes' => $request->renter_notes ?: $return->renter_notes,
             'status' => 'shipping',
             'tanggal_pengembalian' => now(),
         ]);
@@ -445,6 +471,10 @@ class PembeliOrderController extends Controller
 
         $return->update([
             'status' => 'completed',
+        ]);
+
+        $pesanan->update([
+            'status' => 'selesai',
         ]);
 
         return back()->with('success', 'Penerimaan produk pengganti berhasil dikonfirmasi. Retur selesai!');

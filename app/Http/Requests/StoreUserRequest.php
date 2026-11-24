@@ -24,6 +24,7 @@ class StoreUserRequest extends FormRequest
         return [
             // ✅ ATURAN REGISTRASI USER
             'name' => 'required|string|max:255|min:3|regex:/^[a-zA-Z\s]+$/',
+            'receiver_name' => 'nullable|string|max:255',
             'email' => 'required|email|unique:users,email|max:255',
             'password' => [
                 'required',

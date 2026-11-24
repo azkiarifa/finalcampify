@@ -18,9 +18,17 @@
             @csrf
 
             <div class="mb-3">
-                <label class="fw-semibold" style="color:#0a8045;">Nama Lengkap</label>
+                <label class="fw-semibold" style="color:#0a8045;">Nama Profil</label>
                 <input type="text" name="name" class="form-control" required 
-                       value="{{ old('name') }}">
+                       value="{{ old('name') }}" placeholder="Nama profil akun">
+                <small class="text-muted">Nama yang tampil sebagai profil Anda.</small>
+            </div>
+
+            <div class="mb-3">
+                <label class="fw-semibold" style="color:#0a8045;">Nama di Alamat (Penerima)</label>
+                <input type="text" name="receiver_name" class="form-control" 
+                       value="{{ old('receiver_name') }}" placeholder="Nama penerima paket">
+                <small class="text-muted">Nama yang tertera pada label alamat pengiriman.</small>
             </div>
 
             <div class="mb-3">

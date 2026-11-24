@@ -37,7 +37,15 @@ class Return_seller extends Model
         'refund_disbursed_at',
         'resolution_type',
         'resi_pengganti',
+        'kurir_return',
+        'booking_code_return',
+        'kurir_pengganti',
+        'booking_code_pengganti',
+        'ongkir_bearer',
+        'stock_replacement_empty',
+        'offer_refund_alternative',
         'owner_notes',
+        'renter_notes',
     ];
     protected $casts = [
         'escrow_total' => 'decimal:2',

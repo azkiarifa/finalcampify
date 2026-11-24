@@ -17,6 +17,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'nama',
+        'receiver_name',
         'email',
         'password',
         'role',
@@ -61,6 +62,11 @@ class User extends Authenticatable
     public function store()
     {
         return $this->hasOne(Store::class);
+    }
+
+    public function addresses()
+    {
+        return $this->hasMany(\App\Models\Pembeli\UserAddress::class, 'user_id');
     }
 
     public function orders()

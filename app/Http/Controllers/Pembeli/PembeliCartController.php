@@ -47,7 +47,7 @@ class PembeliCartController extends Controller
             }
         }
 
-        Keranjang_pembeli::create([
+        $cartItem = Keranjang_pembeli::create([
             'user_id' => Auth::id(),
             'product_id' => $request->product_id,
             'qty' => $request->quantity ?? 1,
@@ -56,9 +56,10 @@ class PembeliCartController extends Controller
             'start_date' => $request->start_date ?? null,
         ]);
 
-        // Jika dari halaman checkout, redirect ke checkout
+        // Jika dari halaman detail produk (Beli Sekarang), arahkan ke checkout HANYA membawa item baru ini
         if ($request->has('redirect') && $request->redirect === 'checkout') {
-            return redirect()->route('checkout.index')->with('success', 'Produk ditambahkan. Silakan lengkapi data checkout.');
+            return redirect()->route('checkout.index', ['selected_items' => [$cartItem->id]])
+                ->with('success', 'Produk siap dicheckout. Silakan lengkapi data pengiriman.');
         }
 
         return back()->with('success', 'Produk ditambahkan ke keranjang');

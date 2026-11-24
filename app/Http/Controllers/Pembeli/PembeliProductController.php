@@ -160,10 +160,12 @@ class PembeliProductController extends Controller
             ->paginate(12);
 
         $wishlistProductIds = $this->getWishlistProductIds();
+        $categories = app(\App\Services\RecommendationService::class)->getPopularCategories(6);
 
         return view('pembeli.produk.index_pembeli', [
             'produks' => $produks,
             'wishlistProductIds' => $wishlistProductIds,
+            'categories' => $categories,
             'mode' => 'buy'
         ]);
     }
@@ -176,10 +178,12 @@ class PembeliProductController extends Controller
             ->paginate(12);
 
         $wishlistProductIds = $this->getWishlistProductIds();
+        $categories = app(\App\Services\RecommendationService::class)->getPopularCategories(6);
 
         return view('pembeli.produk.index_pembeli', [
             'produks' => $produks,
             'wishlistProductIds' => $wishlistProductIds,
+            'categories' => $categories,
             'mode' => 'rent'
         ]);
     }

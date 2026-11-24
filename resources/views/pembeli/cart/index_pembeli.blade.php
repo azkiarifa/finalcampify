@@ -1,7 +1,7 @@
 @extends('layouts.app_pembeli')
 
 @section('content')
-<div class="py-12 max-w-7xl mx-auto px-4 bg-gray-50 min-h-screen">
+<div class="py-12 max-w-6xl mx-auto px-4 bg-gray-50 min-h-screen">
     <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 gap-4">
         <div>
             <h1 class="text-3xl font-bold text-slate-900 tracking-tight uppercase">Keranjang Belanja</h1>
@@ -27,10 +27,10 @@
     @else
 
     <form action="{{ route('checkout.index') }}" method="GET" id="cart-form">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
 
             <!-- ITEMS LIST -->
-            <div class="lg:col-span-2 space-y-6">
+            <div class="lg:col-span-2 space-y-4">
                 @foreach($cart as $item)
                     @php
                         $price = $item->type === 'buy'
@@ -39,35 +39,35 @@
                         $itemTotal = $price * $item->qty;
                     @endphp
 
-                    <div class="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-200 transition-all hover:shadow-md flex items-center gap-6 group relative overflow-hidden">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 transition-all hover:shadow-md flex items-center gap-4 group relative overflow-hidden">
                         <!-- Selection Area -->
-                        <div class="flex-shrink-0 flex items-center justify-center pr-2">
+                        <div class="flex-shrink-0 flex items-center justify-center pr-1">
                             <input type="checkbox" name="selected_items[]" value="{{ $item->id }}" 
-                                   class="cart-checkbox w-7 h-7 rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer"
+                                   class="cart-checkbox w-6 h-6 rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer"
                                    data-price="{{ $itemTotal }}" checked>
                         </div>
 
                         <!-- Product Image -->
-                        <div class="relative h-28 w-28 md:h-36 md:w-36 flex-shrink-0 overflow-hidden rounded-2xl shadow-sm border border-gray-100">
+                        <div class="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl shadow-sm border border-gray-100 bg-gray-50">
                             <img src="{{ $item->product->image_url }}" 
                                  alt="{{ $item->product->name }}"
                                  class="h-full w-full object-cover">
-                            <div class="absolute bottom-2 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white text-[9px] font-bold px-3 py-1 rounded-full uppercase tracking-tighter shadow-lg">
+                            <div class="absolute bottom-1 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white text-[8px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tight shadow">
                                 {{ $item->type === 'buy' ? 'Beli' : 'Sewa' }}
                             </div>
                         </div>
 
                         <!-- Product Info -->
                         <div class="flex-1 min-w-0">
-                            <div class="flex flex-col h-full justify-between">
-                                <div class="mb-4">
-                                    <div class="flex justify-between items-start gap-4">
-                                        <h3 class="text-xl font-bold text-slate-900 leading-tight truncate">{{ $item->product->name }}</h3>
-                                        <button type="button" onclick="removeItem({{ $item->id }})" class="h-10 w-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            <div class="flex flex-col h-full justify-between gap-3">
+                                <div>
+                                    <div class="flex justify-between items-start gap-2">
+                                        <h3 class="text-base font-bold text-slate-900 leading-snug truncate">{{ $item->product->name }}</h3>
+                                        <button type="button" onclick="removeItem({{ $item->id }})" class="h-8 w-8 flex-shrink-0 flex items-center justify-center rounded-lg bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                         </button>
                                     </div>
-                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-2">
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">
                                         @if($item->type === 'rent')
                                             {{ $item->duration }} HARI • MULAI {{ \Carbon\Carbon::parse($item->start_date)->format('d M Y') }}
                                         @else
@@ -76,32 +76,32 @@
                                     </p>
                                 </div>
 
-                                <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+                                <div class="flex flex-wrap items-end justify-between gap-3">
                                     <!-- Controls -->
-                                    <div class="flex flex-col gap-2">
-                                        <div class="flex items-center gap-2">
-                                            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Kuantitas</p>
+                                    <div class="flex flex-col gap-1.5">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Qty</span>
                                             <span class="text-[10px] font-medium {{ ($item->product?->stock ?? 0) > 0 ? 'text-emerald-600' : 'text-rose-500' }}">(Stok: {{ $item->product?->stock ?? 0 }})</span>
                                         </div>
-                                        <div class="flex items-center bg-gray-100 rounded-xl p-1 border border-gray-200 w-fit">
+                                        <div class="flex items-center bg-gray-100 rounded-lg p-0.5 border border-gray-200 w-fit">
                                             @if($item->type === 'buy')
-                                                <button type="button" onclick="updateQty({{ $item->id }}, {{ $item->qty - 1 }})" class="h-10 w-10 flex items-center justify-center rounded bg-white hover:bg-green-600 hover:text-white transition-all text-slate-600 font-bold">-</button>
-                                                <span class="w-12 text-center font-bold text-slate-800">{{ $item->qty }}</span>
-                                                <button type="button" onclick="updateQty({{ $item->id }}, {{ $item->qty + 1 }})" class="h-10 w-10 flex items-center justify-center rounded bg-white hover:bg-green-600 hover:text-white transition-all text-slate-600 font-bold">+</button>
+                                                <button type="button" onclick="updateQty({{ $item->id }}, {{ $item->qty - 1 }})" class="h-8 w-8 flex items-center justify-center rounded bg-white hover:bg-green-600 hover:text-white transition-all text-slate-600 font-bold text-sm">-</button>
+                                                <span class="w-10 text-center font-bold text-xs text-slate-800">{{ $item->qty }}</span>
+                                                <button type="button" onclick="updateQty({{ $item->id }}, {{ $item->qty + 1 }})" class="h-8 w-8 flex items-center justify-center rounded bg-white hover:bg-green-600 hover:text-white transition-all text-slate-600 font-bold text-sm">+</button>
                                             @else
-                                                <button type="button" onclick="updateDuration({{ $item->id }}, {{ $item->duration - 1 }})" class="h-10 w-10 flex items-center justify-center rounded bg-white hover:bg-green-600 hover:text-white transition-all text-slate-600 font-bold">-</button>
-                                                <div class="flex items-center px-3">
-                                                    <span class="font-bold text-slate-800">{{ $item->duration }}</span>
-                                                    <span class="text-[9px] font-bold text-slate-400 uppercase ml-2">Hari</span>
+                                                <button type="button" onclick="updateDuration({{ $item->id }}, {{ $item->duration - 1 }})" class="h-8 w-8 flex items-center justify-center rounded bg-white hover:bg-green-600 hover:text-white transition-all text-slate-600 font-bold text-sm">-</button>
+                                                <div class="flex items-center px-2">
+                                                    <span class="font-bold text-xs text-slate-800">{{ $item->duration }}</span>
+                                                    <span class="text-[9px] font-bold text-slate-400 uppercase ml-1">Hari</span>
                                                 </div>
-                                                <button type="button" onclick="updateDuration({{ $item->id }}, {{ $item->duration + 1 }})" class="h-10 w-10 flex items-center justify-center rounded bg-white hover:bg-green-600 hover:text-white transition-all text-slate-600 font-bold">+</button>
+                                                <button type="button" onclick="updateDuration({{ $item->id }}, {{ $item->duration + 1 }})" class="h-8 w-8 flex items-center justify-center rounded bg-white hover:bg-green-600 hover:text-white transition-all text-slate-600 font-bold text-sm">+</button>
                                             @endif
                                         </div>
                                     </div>
                                     
-                                    <div class="text-right flex flex-col items-end">
-                                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Subtotal</p>
-                                        <p class="text-2xl font-bold text-green-600 leading-none">Rp {{ number_format($itemTotal, 0, ',', '.') }}</p>
+                                    <div class="text-right">
+                                        <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Subtotal</p>
+                                        <p class="text-lg font-bold text-green-600 leading-tight">Rp {{ number_format($itemTotal, 0, ',', '.') }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -110,25 +110,20 @@
                 @endforeach
             </div>
 
-            <!-- SUMMARY SIDEBAR -->
-            <div class="h-fit lg:sticky lg:top-24">
-                <div class="bg-slate-900 p-8 rounded-3xl shadow-xl text-white">
-                    <h2 class="text-xl font-bold mb-8">Ringkasan</h2>
-
-                    <div class="space-y-6 mb-8">
-                        <div class="flex justify-between items-center">
-                            <span class="text-[11px] font-bold text-gray-400 uppercase tracking-[0.2em]">Item Terpilih</span>
-                            <span id="selected-count" class="font-bold text-white text-xl">0</span>
-                        </div>
-                        <div class="flex justify-between items-center pt-6 border-t border-slate-800">
-                            <div class="flex flex-col gap-1 w-full">
-                                <span class="text-[11px] font-bold text-gray-400 uppercase tracking-[0.2em]">Estimasi Total</span>
-                                <span id="display-total" class="text-4xl font-bold text-white tabular-nums">Rp 0</span>
-                            </div>
-                        </div>
+            <!-- SUMMARY SIDEBAR (Compact & tidak terlalu panjang) -->
+            <div class="h-fit lg:sticky lg:top-24 lg:col-span-1">
+                <div class="bg-slate-900 p-5 rounded-2xl shadow-sm text-white border border-slate-800">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+                        <h2 class="text-sm font-bold text-white tracking-wide">Ringkasan Pesanan</h2>
+                        <span class="text-xs text-gray-400"><span id="selected-count" class="font-bold text-white">0</span> item</span>
                     </div>
 
-                    <button type="submit" id="checkout-btn" disabled class="w-full bg-green-500 disabled:bg-slate-800 disabled:text-slate-600 hover:bg-green-400 text-white py-4 rounded-2xl font-bold text-base transition-all flex items-center justify-center shadow-lg">
+                    <div class="flex items-baseline justify-between mb-4">
+                        <span class="text-xs font-medium text-gray-400">Estimasi Total</span>
+                        <span id="display-total" class="text-xl font-bold text-emerald-400 tabular-nums">Rp 0</span>
+                    </div>
+
+                    <button type="submit" id="checkout-btn" disabled class="w-full bg-emerald-600 disabled:bg-slate-800 disabled:text-slate-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center shadow cursor-pointer">
                         Checkout Terpilih
                     </button>
                 </div>

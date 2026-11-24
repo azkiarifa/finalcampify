@@ -106,7 +106,7 @@ class OrderController_seller extends Controller
         $request->validate([
             'status' => 'required',
             'resi' => 'nullable|string|max:255',
-            'video_pengiriman' => 'nullable|file|mimes:mp4,mov,avi|max:20480',
+            'video_pengiriman' => 'nullable|file|mimes:mp4,mov,avi,webm,mkv,jpg,jpeg,png,webp|max:20480',
         ]);
 
         $status = $statusMap[$request->status] ?? $request->status;
@@ -127,7 +127,7 @@ class OrderController_seller extends Controller
             $file->move(public_path('assets/videos'), $filename);
             $updateData['video_pengiriman'] = 'assets/videos/' . $filename;
         } else if ($status === SellerOrder::STATUS_SHIPPED && !$order->video_pengiriman) {
-             return back()->with('error', 'Video bukti pengiriman wajib diunggah saat mengubah status menjadi Dikirim.');
+             return back()->with('error', 'Foto/Video bukti pengiriman wajib diunggah saat mengubah status menjadi Dikirim.');
         }
 
         $prevStatus = $order->status;
@@ -189,7 +189,7 @@ class OrderController_seller extends Controller
     {
         $request->validate([
             'resi' => 'required|string|max:255',
-            'video_pengiriman' => 'required|file|mimes:mp4,mov,avi|max:20480',
+            'video_pengiriman' => 'required|file|mimes:mp4,mov,avi,webm,mkv,jpg,jpeg,png,webp|max:20480',
         ]);
 
         $order = $this->sellerOrders()->findOrFail($order);

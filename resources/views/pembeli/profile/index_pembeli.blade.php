@@ -46,8 +46,8 @@
                 @php
                     $tabs = [
                         'profile' => 'Profile Saya',
-                        'rentals' => 'Penyewaan Saya',
-                        'purchases' => 'Pembelian Saya',
+                        'rentals' => 'Pemesanan Sewa',
+                        'purchases' => 'Pemesanan Produk',
                         'reports' => 'Riwayat Laporan',
                         'edit' => 'Edit Profile',
                     ];
@@ -154,10 +154,10 @@
                 </div>
             @elseif($tab === 'rentals')
                 <div class="bg-white rounded-3xl p-8 shadow-sm">
-                    <h2 class="text-2xl font-bold mb-4">Penyewaan Saya</h2>
+                    <h2 class="text-2xl font-bold mb-4">Pemesanan Sewa</h2>
                     @if($rentalOrders->isEmpty())
                         <div class="rounded-3xl border border-dashed border-gray-300 p-8 text-center text-gray-500">
-                            Belum ada riwayat penyewaan.
+                            Belum ada riwayat pemesanan sewa.
                         </div>
                     @else
                         <div class="space-y-4">
@@ -188,8 +188,18 @@
                                             </div>
                                         </div>
                                         <div class="flex flex-col items-end gap-3">
+                                            @php
+                                                $rentalDisplayBadge = match(strtolower($order->status)) {
+                                                    'menunggu', 'pending' => 'Menunggu Verifikasi',
+                                                    'diproses', 'processing' => 'Barang Dikemas',
+                                                    'dikirim', 'shipped' => 'Dikirim',
+                                                    'selesai', 'delivered', 'completed' => 'Selesai',
+                                                    'dibatalkan', 'cancelled' => 'Dibatalkan',
+                                                    default => ucfirst($order->status)
+                                                };
+                                            @endphp
                                             <span class="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[9px] font-bold uppercase tracking-wider border border-blue-100">
-                                                {{ $order->status }}
+                                                {{ $rentalDisplayBadge }}
                                             </span>
                                             <a href="{{ route('orders.detail', $order->id) }}" class="text-[10px] font-bold text-emerald-600 hover:underline">
                                                 Lihat Detail →
@@ -203,10 +213,10 @@
                 </div>
             @elseif($tab === 'purchases')
                 <div class="bg-white rounded-3xl p-8 shadow-sm">
-                    <h2 class="text-2xl font-bold mb-4">Pembelian Saya</h2>
+                    <h2 class="text-2xl font-bold mb-4">Pemesanan Produk</h2>
                     @if($purchaseOrders->isEmpty())
                         <div class="rounded-3xl border border-dashed border-gray-300 p-8 text-center text-gray-500">
-                            Belum ada riwayat pembelian.
+                            Belum ada riwayat pemesanan produk.
                         </div>
                     @else
                         <div class="space-y-4">
@@ -237,8 +247,18 @@
                                             </div>
                                         </div>
                                         <div class="flex flex-col items-end gap-3">
+                                            @php
+                                                $purchaseDisplayBadge = match(strtolower($order->status)) {
+                                                    'menunggu', 'pending' => 'Menunggu Verifikasi',
+                                                    'diproses', 'processing' => 'Barang Dikemas',
+                                                    'dikirim', 'shipped' => 'Dikirim',
+                                                    'selesai', 'delivered', 'completed' => 'Selesai',
+                                                    'dibatalkan', 'cancelled' => 'Dibatalkan',
+                                                    default => ucfirst($order->status)
+                                                };
+                                            @endphp
                                             <span class="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-bold uppercase tracking-wider border border-emerald-100">
-                                                {{ $order->status }}
+                                                {{ $purchaseDisplayBadge }}
                                             </span>
                                             <a href="{{ route('orders.detail', $order->id) }}" class="text-[10px] font-bold text-emerald-600 hover:underline">
                                                 Lihat Detail →
@@ -253,10 +273,10 @@
 
             @elseif($tab === 'purchases')
                 <div class="bg-white rounded-3xl p-8 shadow-sm">
-                    <h2 class="text-2xl font-bold mb-4">Pembelian Saya</h2>
+                    <h2 class="text-2xl font-bold mb-4">Pemesanan Produk</h2>
                     @if($purchaseOrders->isEmpty())
                         <div class="rounded-3xl border border-dashed border-gray-300 p-8 text-center text-gray-500">
-                            Belum ada riwayat pembelian.
+                            Belum ada riwayat pemesanan produk.
                         </div>
                     @else
                         <div class="space-y-6">
@@ -264,7 +284,17 @@
                                 <div class="rounded-3xl border p-6 shadow-sm bg-emerald-50/30">
                                     <div class="flex justify-between items-center mb-4 border-b border-emerald-100 pb-3">
                                         <p class="font-bold text-slate-800">Pesanan #{{ $order->order_number ?? $order->id }}</p>
-                                        <span class="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold uppercase">{{ $order->status }}</span>
+                                        @php
+                                            $orderBadgeLabel = match(strtolower($order->status)) {
+                                                'menunggu', 'pending' => 'Menunggu Verifikasi',
+                                                'diproses', 'processing' => 'Barang Dikemas',
+                                                'dikirim', 'shipped' => 'Dikirim',
+                                                'selesai', 'delivered', 'completed' => 'Selesai',
+                                                'dibatalkan', 'cancelled' => 'Dibatalkan',
+                                                default => ucfirst($order->status)
+                                            };
+                                        @endphp
+                                        <span class="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold uppercase">{{ $orderBadgeLabel }}</span>
                                         @if($order->returnRequest)
                                             @php
                                                 $retStatus = $order->returnRequest->status;

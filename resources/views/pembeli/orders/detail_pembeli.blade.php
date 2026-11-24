@@ -1,63 +1,18 @@
 @extends('layouts.app_pembeli')
 
 @section('extra_css')
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <style>
-    #tracking-map { 
-        height: 380px; 
-        width: 100%;
-        border-radius: 20px; 
-        z-index: 10; 
-        overflow: hidden;
+    .tracking-timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 7px;
+        top: 20px;
+        bottom: -8px;
+        width: 2px;
+        background-color: #e2e8f0;
     }
-    .custom-map-pin {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        background: #ffffff;
-        color: #0f172a;
-        padding: 5px 12px;
-        border-radius: 9999px;
-        font-size: 11px;
-        font-weight: 800;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 4px 10px -2px rgba(0, 0, 0, 0.08);
-        border: 2px solid #059669;
-        white-space: nowrap;
-        pointer-events: auto;
-    }
-    .custom-map-pin.buyer {
-        border-color: #2563eb;
-        color: #1e3a8a;
-    }
-    .custom-map-pin.courier {
-        background: #0f172a;
-        color: #f8fafc;
-        border-color: #10b981;
-        box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.3);
-        animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
-    @keyframes pulse-ring {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
-        50% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-    }
-    .leaflet-control-zoom {
-        border: none !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.12) !important;
-        border-radius: 12px !important;
-        overflow: hidden !important;
-    }
-    .leaflet-control-zoom a {
-        background-color: #ffffff !important;
-        color: #1e293b !important;
-        border: none !important;
-        font-size: 14px !important;
-        width: 32px !important;
-        height: 32px !important;
-        line-height: 32px !important;
-    }
-    .leaflet-control-zoom a:hover {
-        background-color: #f1f5f9 !important;
-        color: #059669 !important;
+    .tracking-timeline-item:last-child::before {
+        display: none;
     }
 </style>
 @endsection
@@ -73,7 +28,7 @@
                 $hasRental = $pesanan->details->contains('type', 'rent');
             }
             $backUrl = $hasRental ? route('profile', ['tab' => 'rentals']) : route('profile', ['tab' => 'purchases']);
-            $backLabel = $hasRental ? 'Kembali ke Penyewaan Saya' : 'Kembali ke Pembelian Saya';
+            $backLabel = $hasRental ? 'Kembali ke Pemesanan Sewa' : 'Kembali ke Pemesanan Produk';
         @endphp
         <div class="mb-6">
             <a href="{{ $backUrl }}" class="inline-flex items-center gap-2 text-sm font-semibold text-green-600 hover:text-green-800 transition-colors">
@@ -148,24 +103,37 @@
                     $rental = \App\Models\Pembeli\Rental_pembeli::where('order_id', $pesanan->id)->first();
                 }
 
-                $displayStatus = $pesanan->status;
-                $statusColor = 'bg-amber-100 text-amber-700';
+                $rawStatus = strtolower($pesanan->status ?? '');
+                $rentalStatus = $rental ? strtolower($rental->status ?? '') : null;
 
-                if ($rental) {
-                    $displayStatus = $rental->status;
-                    $statusColor = match($rental->status) {
-                        'active' => 'bg-blue-100 text-blue-700',
-                        'returned' => 'bg-indigo-100 text-indigo-700',
-                        'completed' => 'bg-emerald-100 text-emerald-700',
-                        'cancelled' => 'bg-red-100 text-red-700',
-                        default => 'bg-amber-100 text-amber-700'
+                if ($rental && in_array($rentalStatus, ['active', 'returned', 'completed'])) {
+                    $displayStatus = match($rentalStatus) {
+                        'active' => 'Sedang Disewa',
+                        'returned' => 'Dikembalikan',
+                        'completed' => 'Selesai',
+                        default => 'Penyewaan Aktif'
+                    };
+                    $statusColor = match($rentalStatus) {
+                        'active' => 'bg-blue-100 text-blue-800 border border-blue-200',
+                        'returned' => 'bg-indigo-100 text-indigo-800 border border-indigo-200',
+                        'completed' => 'bg-emerald-100 text-emerald-800 border border-emerald-200',
+                        default => 'bg-blue-100 text-blue-800'
                     };
                 } else {
-                    $statusColor = match($pesanan->status) {
-                        'diproses' => 'bg-yellow-100 text-yellow-700',
-                        'selesai' => 'bg-green-100 text-green-700',
-                        'menunggu' => 'bg-amber-100 text-amber-700',
-                        'dibatalkan' => 'bg-red-100 text-red-700',
+                    $displayStatus = match($rawStatus) {
+                        'menunggu', 'pending' => 'Menunggu Verifikasi Pembayaran',
+                        'diproses', 'processing' => 'Barang Dikemas',
+                        'dikirim', 'shipping' => 'Dalam Pengiriman',
+                        'selesai', 'completed', 'delivered' => 'Pesanan Selesai',
+                        'dibatalkan', 'cancelled' => 'Dibatalkan',
+                        default => ucfirst($rawStatus)
+                    };
+                    $statusColor = match($rawStatus) {
+                        'menunggu', 'pending' => 'bg-amber-100 text-amber-800 border border-amber-200',
+                        'diproses', 'processing' => 'bg-yellow-100 text-yellow-800 border border-yellow-200',
+                        'dikirim', 'shipping' => 'bg-emerald-100 text-emerald-800 border border-emerald-200',
+                        'selesai', 'completed', 'delivered' => 'bg-blue-100 text-blue-800 border border-blue-200',
+                        'dibatalkan', 'cancelled' => 'bg-red-100 text-red-800 border border-red-200',
                         default => 'bg-slate-100 text-slate-700'
                     };
                 }
@@ -175,13 +143,15 @@
                 @if(isset($detailId))
                     @php $specificItem = $pesanan->details->first(); @endphp
                     <span class="px-3 py-1 {{ $specificItem->type === 'rent' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100' }} rounded-full text-[10px] font-black uppercase tracking-widest border">
-                        {{ $specificItem->type === 'rent' ? 'Penyewaan' : 'Pembelian' }}
+                        {{ $specificItem->type === 'rent' ? 'Pemesanan Sewa' : 'Pemesanan Produk' }}
                     </span>
                 @elseif($rental)
-                    <span class="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-100">Penyewaan</span>
+                    <span class="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-blue-100">Pemesanan Sewa</span>
+                @else
+                    <span class="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100">Pemesanan Produk</span>
                 @endif
                 <span class="px-4 py-1 rounded-full text-sm font-bold uppercase {{ $statusColor }}">
-                    {{ ucfirst($displayStatus) }}
+                    {{ $displayStatus }}
                 </span>
             </div>
         </div>
@@ -234,7 +204,11 @@
                         </div>
                         <div class="flex justify-between items-center text-sm">
                             <span class="text-slate-500">Status Pembayaran</span>
-                            <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[10px] font-bold uppercase">Lunas</span>
+                            @if(in_array($pesanan->status, ['diproses', 'dikirim', 'selesai', 'processing', 'shipped', 'delivered', 'completed']))
+                                <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[10px] font-bold uppercase">Terverifikasi (Lunas)</span>
+                            @else
+                                <span class="px-2 py-0.5 bg-amber-100 text-amber-800 rounded text-[10px] font-bold uppercase">Menunggu Verifikasi Penjual</span>
+                            @endif
                         </div>
                         <div class="flex justify-between items-center pt-2 border-t">
                             <span class="font-bold text-slate-800">Total Transaksi {{ isset($detailId) ? '(Barang Ini)' : '' }}</span>
@@ -257,7 +231,7 @@
                 </div>
             </div>
 
-            <!-- MAP TRACKING & LOGISTICS SECTION -->
+            <!-- LIVE LOGISTICS & API COURIER TRACKING SECTION -->
             @php
                 $orderStatus = strtolower($pesanan->status ?? '');
                 $stepIndex = 1;
@@ -277,37 +251,33 @@
                         <div class="flex items-center gap-2 mb-1">
                             <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
-                                Live Logistics
+                                Live Pelacakan API Kurir
                             </span>
                             <span class="text-xs font-bold text-slate-400">#{{ $pesanan->order_number ?? $pesanan->id }}</span>
                         </div>
                         <h2 class="text-lg font-black text-slate-800 flex items-center gap-2">
-                            <span>Lacak Pengiriman Pesanan</span>
+                            <span>Status Pengiriman Kurir Ekspedisi</span>
                         </h2>
                     </div>
 
                     <div class="flex items-center gap-2">
-                        @if($orderStatus === 'dikirim')
+                        @if($orderStatus === 'dikirim' || $orderStatus === 'shipping' || $orderStatus === 'otw')
                             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500 text-white shadow-sm">
                                 <i data-lucide="truck" class="w-3.5 h-3.5 animate-bounce"></i> Dalam Pengiriman
                             </span>
-                        @elseif($orderStatus === 'diproses')
+                        @elseif($orderStatus === 'diproses' || $orderStatus === 'processing')
                             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                                <i data-lucide="package" class="w-3.5 h-3.5"></i> Sedang Dikemas
+                                <i data-lucide="package" class="w-3.5 h-3.5"></i> Barang Dikemas
                             </span>
-                        @elseif($orderStatus === 'selesai')
+                        @elseif($orderStatus === 'selesai' || $orderStatus === 'delivered' || $orderStatus === 'completed')
                             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200">
                                 <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Paket Telah Diterima
                             </span>
                         @else
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700">
-                                <i data-lucide="clock" class="w-3.5 h-3.5"></i> Menunggu Konfirmasi
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                <i data-lucide="clock" class="w-3.5 h-3.5"></i> Menunggu Verifikasi
                             </span>
                         @endif
-
-                        <button type="button" id="toggleMapBtn" class="inline-flex items-center gap-1 px-3 py-1 text-xs font-bold text-slate-600 hover:text-emerald-700 bg-slate-100 hover:bg-slate-200 rounded-full transition-all">
-                            <span id="toggleMapText">Sembunyikan Peta</span>
-                        </button>
                     </div>
                 </div>
 
@@ -331,10 +301,12 @@
                         <!-- Step 2 -->
                         <div class="text-center relative z-10">
                             <div class="w-8 h-8 mx-auto mb-2 rounded-full flex items-center justify-center font-bold text-xs transition-all {{ $stepIndex >= 2 ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 ring-4 ring-emerald-50' : 'bg-slate-200 text-slate-500' }}">
-                                @if($stepIndex > 2) ✓ @else 2 @endif
+                                @if($stepIndex > 2) ✓ @elseif($stepIndex == 2) 2 @else 2 @endif
                             </div>
-                            <p class="text-xs font-bold {{ $stepIndex >= 2 ? 'text-slate-800' : 'text-slate-400' }} leading-tight">Dikemas</p>
-                            <p class="text-[10px] text-slate-400 hidden sm:block mt-0.5">Disiapkan toko</p>
+                            <p class="text-xs font-bold {{ $stepIndex >= 2 ? 'text-slate-800' : 'text-slate-400' }} leading-tight">Barang Dikemas</p>
+                            <p class="text-[10px] text-slate-400 hidden sm:block mt-0.5">
+                                @if($stepIndex >= 2) Disiapkan toko @else Menunggu verifikasi @endif
+                            </p>
                         </div>
 
                         <!-- Step 3 -->
@@ -357,41 +329,176 @@
                     </div>
                 </div>
 
-
-                <!-- Leaflet Interactive Map Container -->
-                <div id="mapWrapper" class="relative group rounded-2xl overflow-hidden border border-slate-200 shadow-sm transition-all duration-300">
-                    <div id="tracking-map"></div>
-
-                    <!-- Bottom floating status overlay -->
-                    <div class="absolute bottom-3 left-3 right-3 z-30 pointer-events-none">
-                        <div class="pointer-events-auto bg-white/95 backdrop-blur-md px-4 py-3 rounded-2xl shadow-lg border border-slate-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                            <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shrink-0 border border-emerald-100">
-                                    @if($orderStatus === 'dikirim') 🚚 @elseif($orderStatus === 'selesai') 📦 @else 🏪 @endif
+                <!-- COURIER TRACKING PANEL -->
+                @if($realResi)
+                    @php
+                        $kurirCode = strtoupper($pesanan->kurir ?? '');
+                        $officialTrackingUrl = 'https://www.google.com/search?q=' . urlencode('cek resi ' . ($pesanan->kurir ?? '') . ' ' . $realResi);
+                        if (str_contains($kurirCode, 'JNE')) {
+                            $officialTrackingUrl = 'https://www.jne.co.id/id/tracking/trace';
+                        } elseif (str_contains($kurirCode, 'J&T') || str_contains($kurirCode, 'JNT')) {
+                            $officialTrackingUrl = 'https://jet.co.id/track';
+                        } elseif (str_contains($kurirCode, 'SICEPAT')) {
+                            $officialTrackingUrl = 'https://www.sicepat.com/checkAwb';
+                        } elseif (str_contains($kurirCode, 'POS')) {
+                            $officialTrackingUrl = 'https://www.posindonesia.co.id/id/tracking';
+                        } elseif (str_contains($kurirCode, 'ANTERAJA')) {
+                            $officialTrackingUrl = 'https://anteraja.id/tracking';
+                        }
+                    @endphp
+                    <div class="bg-white rounded-[24px] border border-slate-200/80 shadow-sm overflow-hidden">
+                        <!-- Header Kurir & No. Resi -->
+                        <div class="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl shrink-0 border border-emerald-100/80">
+                                    🚚
                                 </div>
                                 <div>
-                                    <p class="text-[10px] font-extrabold text-emerald-600 uppercase tracking-wider">Status Terkini</p>
-                                    <p class="text-xs font-extrabold text-slate-800 leading-snug">
-                                        @if($orderStatus == 'diproses')
-                                            Paket sedang disiapkan dan dicek oleh {{ $storeData->nama_toko ?? 'Mitra Toko' }}
-                                        @elseif($orderStatus == 'dikirim')
-                                            Paket sedang dalam perjalanan kurir menuju alamat Anda
-                                        @elseif($orderStatus == 'selesai')
-                                            Paket telah tiba dan diterima di alamat tujuan
-                                        @else
-                                            Menunggu konfirmasi pembayaran pesanan
-                                        @endif
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <h3 class="text-base font-black text-slate-800 tracking-wide uppercase">
+                                            {{ $pesanan->kurir ?? 'JNE Express' }}
+                                        </h3>
+                                        <span class="text-[10px] px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold">
+                                            Reguler
+                                        </span>
+                                        <span class="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200/60 flex items-center gap-1">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                            Resi Terverifikasi
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <span class="text-xs text-slate-400 font-medium">No. Resi:</span>
+                                        <span id="noResiText" class="font-mono text-sm sm:text-base font-black text-slate-900 tracking-wider">
+                                            {{ $realResi }}
+                                        </span>
+                                        <button type="button" onclick="copyResi()" class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 py-0.5 px-2 rounded-md transition cursor-pointer">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                            Salin
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <a href="{{ $officialTrackingUrl }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm shadow-emerald-600/20 cursor-pointer">
+                                    <span>Lacak di Web Resmi {{ $pesanan->kurir ?? 'Ekspedisi' }}</span>
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Content Area -->
+                        <div class="p-5 sm:p-6 space-y-4">
+                            <!-- Visual Route Connection (Asal & Tujuan) -->
+                            <div class="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-slate-100">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <!-- Pengirim / Asal -->
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-10 h-10 rounded-xl bg-white shadow-xs border border-slate-200/80 flex items-center justify-center text-lg shrink-0">
+                                            🏪
+                                        </div>
+                                        <div class="min-w-0">
+                                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Asal Pengiriman (Toko)</span>
+                                            <p class="text-sm font-bold text-slate-800 truncate mt-0.5">{{ $storeData->nama_toko ?? 'Mitra Toko Campify' }}</p>
+                                            <p class="text-xs text-slate-500 truncate">{{ $storeData->kota ?? 'Kota Bandung' }}</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Penerima / Tujuan -->
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-10 h-10 rounded-xl bg-white shadow-xs border border-slate-200/80 flex items-center justify-center text-lg shrink-0">
+                                            📍
+                                        </div>
+                                        <div class="min-w-0">
+                                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Tujuan Pengiriman</span>
+                                            <p class="text-sm font-bold text-slate-800 truncate mt-0.5">{{ $pesanan->receiver_name }}</p>
+                                            <p class="text-xs text-slate-500 truncate">{{ $pesanan->shipping_district ? $pesanan->shipping_district . ', ' : '' }}{{ $pesanan->shipping_city }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Status Pengiriman Aktual Banner -->
+                            <div class="p-4 sm:p-5 rounded-2xl bg-emerald-50/60 border border-emerald-100 flex items-start gap-3.5">
+                                <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-sm font-bold shrink-0 mt-0.5 shadow-sm shadow-emerald-600/30">
+                                    ✓
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
+                                        <span class="text-xs font-black text-emerald-900 uppercase tracking-wide">
+                                            Status: Paket Sedang Dalam Pengiriman
+                                        </span>
+                                        <span class="text-[11px] text-slate-400 font-medium">
+                                            Diperbarui: {{ $pesanan->updated_at ? $pesanan->updated_at->format('d M Y, H:i') . ' WIB' : 'Hari ini' }}
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-slate-600 leading-relaxed">
+                                        Paket telah diserahkan oleh pihak toko kepada pihak ekspedisi <strong class="text-slate-800">{{ $pesanan->kurir ?? 'ekspedisi' }}</strong> dengan nomor resi <span class="font-mono font-bold text-slate-800">{{ $realResi }}</span>. Anda dapat melacak posisi terkini paket langsung melalui website resmi ekspedisi.
                                     </p>
                                 </div>
                             </div>
-                            <div class="text-left sm:text-right shrink-0">
-                                <span class="text-[10px] text-slate-400 block font-medium">Lokasi Asal:</span>
-                                <span class="text-xs font-bold text-slate-700">{{ $storeData->nama_toko ?? 'Mitra Campify' }} ({{ $storeData->kota ?? 'Jawa Barat' }})</span>
-                            </div>
                         </div>
                     </div>
-                </div>
+                @else
+                    <!-- If no resi yet -->
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center space-y-3">
+                        <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl mx-auto">
+                            📦
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-sm">Nomor Resi Belum Diterbitkan</h4>
+                            <p class="text-xs text-slate-500 max-w-md mx-auto mt-1 leading-relaxed">
+                                Pesanan Anda sedang disiapkan dan dikemas oleh pihak toko. Riwayat perjalanan paket dan pelacakan live API kurir akan otomatis muncul di bagian ini setelah paket diserahkan ke kurir.
+                            </p>
+                        </div>
+                    </div>
+                @endif
             </div>
+
+            @php
+                $globalShippingMedia = $pesanan->video_pengiriman 
+                    ?: ($pesanan->sellerOrders?->first(fn($so) => !empty($so->video_pengiriman))?->video_pengiriman);
+            @endphp
+            @if($globalShippingMedia)
+                @php
+                    $ext = strtolower(pathinfo($globalShippingMedia, PATHINFO_EXTENSION));
+                    $isVideo = in_array($ext, ['mp4', 'mov', 'avi', 'webm', 'mkv']);
+                @endphp
+                <div class="bg-white border border-slate-200 rounded-[28px] p-6 shadow-sm mb-6">
+                    <div class="flex items-center justify-between mb-3 pb-3 border-b border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                                <i data-lucide="{{ $isVideo ? 'video' : 'image' }}" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-900">Bukti Pengiriman dari Penjual</h3>
+                                <p class="text-[11px] text-slate-500">Dokumentasi fisik barang saat disiapkan dan diserahkan ke kurir</p>
+                            </div>
+                        </div>
+                        <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                            {{ $isVideo ? 'Video Pengiriman' : 'Foto Pengiriman' }}
+                        </span>
+                    </div>
+
+                    <div class="max-w-lg">
+                        @if($isVideo)
+                            <div class="rounded-2xl overflow-hidden shadow-sm border border-slate-200 bg-black">
+                                <video controls class="w-full max-h-72" preload="metadata">
+                                    <source src="{{ asset($globalShippingMedia) }}">
+                                    Browser Anda tidak mendukung pemutar video.
+                                </video>
+                            </div>
+                        @else
+                            <a href="{{ asset($globalShippingMedia) }}" target="_blank" class="inline-block relative rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:opacity-95 transition group">
+                                <img src="{{ asset($globalShippingMedia) }}" alt="Bukti Pengiriman" class="max-h-64 rounded-2xl object-contain bg-slate-50">
+                                <span class="absolute bottom-2 right-2 bg-slate-900/75 text-white text-[10px] px-2.5 py-1 rounded-lg font-bold group-hover:bg-slate-900">
+                                    Klik untuk perbesar ↗
+                                </span>
+                            </a>
+                        @endif
+                    </div>
+                </div>
+            @endif
 
             <!-- DAFTAR ITEM -->
             <div>
@@ -645,6 +752,15 @@
                                     <span class="text-xs font-bold text-slate-400">{{ $existingStoreReview->created_at->format('d M Y') }}</span>
                                 </div>
                                 <p class="text-sm text-slate-700 font-medium">"{{ $existingStoreReview->comment }}"</p>
+                                @if(!empty($existingStoreReview->reply))
+                                    <div class="mt-3 p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-xs">
+                                        <div class="flex items-center gap-1.5 font-bold text-emerald-800 mb-1">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                                            <span>Respon Toko:</span>
+                                        </div>
+                                        <p class="text-slate-700 leading-relaxed">{{ $existingStoreReview->reply }}</p>
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     @else
@@ -704,17 +820,65 @@
 
             <!-- ACTION -->
             <div class="flex flex-col gap-3">
-                @if($pesanan->sellerOrders->isNotEmpty())
-                    @foreach($pesanan->sellerOrders->where('status', 'shipped') as $sellerOrder)
-                        <form action="{{ route('orders.confirm', $pesanan->id) }}" method="POST">
-                            @csrf
-                            <input type="hidden" name="seller_order_id" value="{{ $sellerOrder->id }}">
-                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-lg shadow-emerald-100 flex items-center justify-center gap-3">
-                                <i data-lucide="package-check" class="w-5 h-5"></i>
-                                Konfirmasi {{ $sellerOrder->seller_order_number ?? 'Seller Order' }} Diterima
-                            </button>
-                        </form>
-                    @endforeach
+                @php
+                    $shippedSellerOrders = $pesanan->sellerOrders ? $pesanan->sellerOrders->where('status', 'shipped') : collect();
+                @endphp
+
+                @if($shippedSellerOrders->count() > 1)
+                    <!-- Notifikasi jika pesanan terbagi dalam beberapa toko / paket -->
+                    <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
+                        <div class="flex items-center gap-2 font-bold text-emerald-900 text-xs mb-1">
+                            <i data-lucide="info" class="w-4 h-4 text-emerald-600"></i>
+                            <span>Pesanan Berisi {{ $shippedSellerOrders->count() }} Paket Pengiriman</span>
+                        </div>
+                        <p class="text-[11px] text-emerald-800 leading-relaxed">
+                            Produk dalam pesanan ini dikirim oleh beberapa mitra toko berbeda. Jika semua paket telah Anda terima, Anda dapat mengonfirmasi sekaligus di bawah ini.
+                        </p>
+                    </div>
+
+                    <!-- Tombol Konfirmasi Sekaligus Semua Paket -->
+                    <form action="{{ route('orders.confirm', $pesanan->id) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-lg shadow-emerald-100 flex items-center justify-center gap-3">
+                            <i data-lucide="check-check" class="w-5 h-5"></i>
+                            Konfirmasi Semua Paket Telah Diterima
+                        </button>
+                    </form>
+
+                    <!-- Opsi Konfirmasi Terpisah Per Toko -->
+                    <div class="space-y-2 mt-2 pt-2 border-t border-slate-200">
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Atau Konfirmasi Terpisah Per Paket Toko:</p>
+                        @foreach($shippedSellerOrders as $sellerOrder)
+                            @php
+                                $storeName = $sellerOrder->store?->nama_toko 
+                                    ?? $sellerOrder->items->first()?->product?->store?->nama_toko 
+                                    ?? 'Toko ' . $sellerOrder->seller_order_number;
+                            @endphp
+                            <form action="{{ route('orders.confirm', $pesanan->id) }}" method="POST">
+                                @csrf
+                                <input type="hidden" name="seller_order_id" value="{{ $sellerOrder->id }}">
+                                <button type="submit" class="w-full bg-white hover:bg-emerald-50/50 text-slate-700 border-2 border-slate-200 hover:border-emerald-500 py-3 rounded-2xl font-bold text-xs transition-all flex items-center justify-between px-4">
+                                    <span class="flex items-center gap-2 text-left">
+                                        <i data-lucide="package-check" class="w-4 h-4 text-emerald-600"></i>
+                                        <span>Konfirmasi Paket dari <strong>{{ $storeName }}</strong></span>
+                                    </span>
+                                    <span class="text-[10px] text-slate-400 font-mono">{{ $sellerOrder->seller_order_number }}</span>
+                                </button>
+                            </form>
+                        @endforeach
+                    </div>
+                @elseif($shippedSellerOrders->count() === 1)
+                    @php
+                        $singleSellerOrder = $shippedSellerOrders->first();
+                    @endphp
+                    <form action="{{ route('orders.confirm', $pesanan->id) }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="seller_order_id" value="{{ $singleSellerOrder->id }}">
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-lg shadow-emerald-100 flex items-center justify-center gap-3">
+                            <i data-lucide="package-check" class="w-5 h-5"></i>
+                            Konfirmasi Pesanan Diterima
+                        </button>
+                    </form>
                 @elseif($pesanan->status == 'dikirim')
                     <form action="{{ route('orders.confirm', $pesanan->id) }}" method="POST">
                         @csrf
@@ -743,12 +907,10 @@
 @endsection
 
 @section('extra_js')
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
     function copyResi() {
         const el = document.getElementById('noResiText');
-        if (!el) return;
-        const text = el.innerText.trim();
+        const text = el ? el.innerText.trim() : '{{ $realResi }}';
         if (navigator.clipboard) {
             navigator.clipboard.writeText(text).then(() => {
                 alert('Nomor resi berhasil disalin: ' + text);
@@ -759,150 +921,5 @@
             prompt('Salin nomor resi:', text);
         }
     }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        // Data dari PHP
-        let storeLat = {{ $pesanan->details->first()->product->store->latitude ?? 'null' }};
-        let storeLng = {{ $pesanan->details->first()->product->store->longitude ?? 'null' }};
-        let destLat = {{ $pesanan->latitude ?? 'null' }};
-        let destLng = {{ $pesanan->longitude ?? 'null' }};
-        
-        const storeName = "{{ addslashes($pesanan->details->first()->product->store->nama_toko ?? 'Toko Campify') }}";
-        const storeAddr = "{{ addslashes($pesanan->details->first()->product->store->alamat ?? '') }}";
-        const buyerAddr = "{{ addslashes($pesanan->shipping_address . ', ' . $pesanan->shipping_district . ', ' . $pesanan->shipping_city) }}";
-        const status = "{{ strtolower($pesanan->status ?? '') }}";
-
-        const mapEl = document.getElementById('tracking-map');
-        if (!mapEl) return;
-
-        // Inisialisasi Map (Default Jawa Barat / Bandung - Jakarta)
-        const map = L.map('tracking-map', {
-            zoomControl: true,
-            scrollWheelZoom: false
-        }).setView([storeLat || -6.9175, storeLng || 107.6191], 12);
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        }).addTo(map);
-
-        // Toggle Map View
-        const toggleBtn = document.getElementById('toggleMapBtn');
-        const mapWrapper = document.getElementById('mapWrapper');
-        const toggleText = document.getElementById('toggleMapText');
-        let isMapOpen = true;
-
-        if (toggleBtn && mapWrapper) {
-            toggleBtn.addEventListener('click', function() {
-                isMapOpen = !isMapOpen;
-                if (isMapOpen) {
-                    mapWrapper.style.display = 'block';
-                    if (toggleText) toggleText.innerText = 'Sembunyikan Peta';
-                    setTimeout(() => { map.invalidateSize(); }, 200);
-                } else {
-                    mapWrapper.style.display = 'none';
-                    if (toggleText) toggleText.innerText = 'Tampilkan Peta';
-                }
-            });
-        }
-
-        // Custom Marker Icons
-        const storeIcon = L.divIcon({ 
-            className: 'custom-div-store', 
-            html: `<div class="custom-map-pin"><span>🏪</span> <span>${storeName}</span></div>`, 
-            iconSize: [null, null], 
-            iconAnchor: [40, 20] 
-        });
-
-        const buyerIcon = L.divIcon({ 
-            className: 'custom-div-buyer', 
-            html: '<div class="custom-map-pin buyer"><span>📍</span> <span>Lokasi Anda</span></div>', 
-            iconSize: [null, null], 
-            iconAnchor: [40, 20] 
-        });
-
-        const courierIcon = L.divIcon({
-            className: 'custom-div-courier',
-            html: '<div class="custom-map-pin courier"><span>🚚</span> <span>Kurir Antar</span></div>',
-            iconSize: [null, null],
-            iconAnchor: [38, 20]
-        });
-
-        async function geocode(address) {
-            if (!address) return null;
-            try {
-                let response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
-                let data = await response.json();
-                
-                if (data.length === 0) {
-                    const parts = address.split(',');
-                    if (parts.length > 1) {
-                        const simplified = parts.slice(-2).join(',').trim();
-                        response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(simplified)}&limit=1`);
-                        data = await response.json();
-                    }
-                }
-
-                if (data.length > 0) {
-                    return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
-                }
-            } catch (e) { console.error("Geocoding error:", e); }
-            return null;
-        }
-
-        async function initTracking() {
-            // Geocoding fallback jika koordinat kosong di database
-            if (!storeLat || !storeLng) {
-                const geoStore = await geocode(storeAddr);
-                if (geoStore) { storeLat = geoStore.lat; storeLng = geoStore.lon; }
-            }
-            if (!destLat || !destLng) {
-                const geoDest = await geocode(buyerAddr);
-                if (geoDest) { destLat = geoDest.lat; destLng = geoDest.lon; }
-            }
-
-            // Fallback default coordinates jika benar-benar kosong
-            storeLat = storeLat || -6.9034;
-            storeLng = storeLng || 107.6186;
-            destLat = destLat || -6.9389;
-            destLng = destLng || 107.6542;
-
-            // Markers Toko & Pembeli
-            const storeMarker = L.marker([storeLat, storeLng], {icon: storeIcon}).addTo(map);
-            const buyerMarker = L.marker([destLat, destLng], {icon: buyerIcon}).addTo(map);
-
-            // Rute Visual dengan efek glow ganda
-            L.polyline([[storeLat, storeLng], [destLat, destLng]], {
-                color: '#059669',
-                weight: 8,
-                opacity: 0.25
-            }).addTo(map);
-
-            const routeLine = L.polyline([[storeLat, storeLng], [destLat, destLng]], {
-                color: '#10b981',
-                weight: 3.5,
-                dashArray: '8, 8',
-                opacity: 0.95
-            }).addTo(map);
-
-            // Tentukan Posisi Paket berdasarkan status aktual
-            let packagePos = [storeLat, storeLng];
-            if (status === 'dikirim' || status === 'shipping') {
-                packagePos = [(storeLat + destLat) / 2, (storeLng + destLng) / 2];
-                L.marker(packagePos, {icon: courierIcon}).addTo(map);
-            } else if (status === 'selesai' || status === 'delivered') {
-                packagePos = [destLat, destLng];
-                L.marker(packagePos, {icon: courierIcon}).addTo(map);
-            } else {
-                // Status diproses / menunggu: paket masih di toko
-                L.marker(packagePos, {icon: courierIcon}).addTo(map);
-            }
-            
-            // Zoom & fit bounds rute
-            map.fitBounds(routeLine.getBounds(), { padding: [60, 60], maxZoom: 14 });
-        }
-
-        initTracking();
-    });
 </script>
 @endsection

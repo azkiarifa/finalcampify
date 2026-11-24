@@ -58,6 +58,20 @@ class PembeliChatController extends Controller
             'seller_id' => $sellerId,
         ]);
 
+        if ($conversation->messages()->count() === 0) {
+            $isRental = (bool) ($product->is_rental ?? false);
+            $priceLabel = $isRental
+                ? 'Rp ' . number_format($product->rent_price ?? 0, 0, ',', '.') . '/hari'
+                : 'Rp ' . number_format($product->buy_price ?? $product->price ?? 0, 0, ',', '.');
+            
+            Message::create([
+                'conversation_id' => $conversation->id,
+                'sender_id' => \Illuminate\Support\Facades\Auth::id(),
+                'message' => "Halo, saya tertarik dengan produk ini: {$product->name} ({$priceLabel}). Apakah produk ini masih tersedia?",
+            ]);
+            $conversation->touch();
+        }
+
         return redirect()->route('chat.show', $conversation);
     }
 

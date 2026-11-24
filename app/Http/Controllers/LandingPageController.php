@@ -115,6 +115,22 @@ class LandingPageController extends Controller
             ],
         ];
 
+        // Urutkan kategori berdasarkan data transaksi kategori populer
+        $popularCategoryNames = app(\App\Services\RecommendationService::class)->getPopularCategories(6);
+        if ($popularCategoryNames->isNotEmpty()) {
+            usort($featuredCategories, function ($a, $b) use ($popularCategoryNames) {
+                $posA = $popularCategoryNames->search(function ($name) use ($a) {
+                    return stripos($name, $a['key']) !== false || stripos($a['name'], $name) !== false;
+                });
+                $posB = $popularCategoryNames->search(function ($name) use ($b) {
+                    return stripos($name, $b['key']) !== false || stripos($b['name'], $name) !== false;
+                });
+                $scoreA = $posA === false ? 999 : $posA;
+                $scoreB = $posB === false ? 999 : $posB;
+                return $scoreA <=> $scoreB;
+            });
+        }
+
         return view('landing.index', compact(
             'rentalProducts',
             'buyProducts',

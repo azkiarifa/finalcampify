@@ -84,13 +84,16 @@ class AuthController extends Controller
         }
 
         $data = $request->validated();
+        $role = $this->normalizeRole($data['role'] ?? 'buyer');
+        $receiverName = ($role === 'seller') ? null : (!empty($data['receiver_name']) ? $data['receiver_name'] : $data['name']);
 
         User::create([
             'name' => $data['name'],
             'nama' => $data['name'],
+            'receiver_name' => $receiverName,
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            'role' => $this->normalizeRole($data['role'] ?? 'buyer'),
+            'role' => $role,
             'status' => 'active',
         ]);
 

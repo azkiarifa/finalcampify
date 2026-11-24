@@ -194,6 +194,7 @@ Route::middleware(['auth', 'role:buyer'])->group(function () {
     Route::get('/checkout', [PembeliCheckoutController::class, 'index'])->name('checkout.index');
     Route::get('/checkout/{id}', [PembeliCheckoutController::class, 'produk'])->name('checkout.now');
     Route::post('/checkout/process', [PembeliCheckoutController::class, 'process'])->name('checkout.process');
+    Route::post('/checkout/address', [PembeliCheckoutController::class, 'storeAddress'])->name('checkout.address.store');
 
     // User Profile
     Route::get('/profile', [PembeliProfileController::class, 'index'])->name('profile');
@@ -274,6 +275,18 @@ Route::middleware(['auth', 'role:seller'])->prefix('seller')->name('seller.')->g
     Route::get('/reports/payouts', [ReportController_seller::class, 'payoutReport'])->name('reports.payouts');
 
     Route::get('/reports/export-pdf/{type}', [ReportController_seller::class, 'exportPdf'])->name('reports.exportPdf');
+});
+
+/*
+|--------------------------------------------------------------------------
+| COURIER EXPEDITION API (Hitung Ongkir, Resi, Pelacakan, Booking Pickup)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('courier-api')->name('courier.')->group(function () {
+    Route::post('/cost', [\App\Http\Controllers\Api\CourierApiController::class, 'calculateCost'])->name('cost');
+    Route::get('/track/{waybill}', [\App\Http\Controllers\Api\CourierApiController::class, 'track'])->name('track');
+    Route::post('/generate-waybill', [\App\Http\Controllers\Api\CourierApiController::class, 'generateWaybill'])->name('generate-waybill');
+    Route::post('/book-pickup', [\App\Http\Controllers\Api\CourierApiController::class, 'bookPickup'])->name('book-pickup');
 });
 
 /*

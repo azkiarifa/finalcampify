@@ -71,6 +71,15 @@
                                         <span class="text-[10px] text-slate-400">{{ $rating->created_at->format('d M Y') }}</span>
                                     </div>
                                     <p class="text-sm text-slate-600 italic">"{{ $rating->comment }}"</p>
+                                    @if(!empty($rating->reply))
+                                        <div class="mt-3 p-3 bg-emerald-50/70 border border-emerald-100 rounded-xl text-xs">
+                                            <div class="flex items-center gap-1.5 font-bold text-emerald-800 mb-1">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                                                <span>Respon Penjual ({{ $produk->store?->nama_toko ?? 'Toko' }}):</span>
+                                            </div>
+                                            <p class="text-slate-700 leading-relaxed">{{ $rating->reply }}</p>
+                                        </div>
+                                    @endif
                                 </div>
                             @empty
                                 <p class="text-sm text-slate-400 text-center py-4">Belum ada ulasan untuk produk ini.</p>
@@ -114,6 +123,12 @@
                                         </div>
                                     </div>
                                     <p class="text-xs text-slate-500 line-clamp-2">"{{ $sRating->comment }}"</p>
+                                    @if(!empty($sRating->reply))
+                                        <div class="mt-2 p-2 bg-emerald-50/70 border border-emerald-100 rounded-lg text-[11px]">
+                                            <p class="font-bold text-emerald-800 mb-0.5">Respon Toko:</p>
+                                            <p class="text-slate-700">{{ $sRating->reply }}</p>
+                                        </div>
+                                    @endif
                                 </div>
                             @empty
                                 <p class="text-xs text-slate-400 text-center py-2">Toko belum memiliki ulasan.</p>

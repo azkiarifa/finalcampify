@@ -9,7 +9,7 @@ class StoreRating_pembeli extends Model
     use HasFactory;
 
     protected $table = 'store_ratings';
-    protected $fillable = ['user_id', 'store_id', 'order_id', 'rating', 'comment', 'ulasan'];
+    protected $fillable = ['user_id', 'store_id', 'order_id', 'rating', 'comment', 'ulasan', 'reply'];
 
     public function user()
     {

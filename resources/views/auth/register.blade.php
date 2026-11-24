@@ -233,8 +233,15 @@
                     @csrf
 
                     <div class="mb-3">
-                        <label for="name" class="form-label">Nama Lengkap</label>
-                        <input type="text" class="form-control" id="name" name="name" value="{{ old('name') }}" placeholder="Nama lengkap" required>
+                        <label for="name" class="form-label" id="nameLabel">Nama Lengkap / Profil</label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ old('name') }}" placeholder="Nama lengkap Anda" required>
+                        <div class="form-text small text-muted" id="nameHelp">Nama yang tampil sebagai identitas akun Anda di Campify.</div>
+                    </div>
+
+                    <div class="mb-3" id="receiverNameBox" style="{{ old('role') == 'seller' ? 'display: none;' : '' }}">
+                        <label for="receiver_name" class="form-label">Nama di Alamat (Penerima)</label>
+                        <input type="text" class="form-control" id="receiver_name" name="receiver_name" value="{{ old('receiver_name') }}" placeholder="Nama lengkap penerima pengiriman">
+                        <div class="form-text small text-muted">Nama yang tertera pada paket/alamat pengiriman barang (khusus pembeli).</div>
                     </div>
 
                     <div class="mb-3">
@@ -427,6 +434,10 @@
         const roleSelect = document.getElementById('role');
         const sellerTermsBox = document.getElementById('sellerTermsBox');
         const sellerTerms = document.getElementById('seller_terms');
+        const receiverNameBox = document.getElementById('receiverNameBox');
+        const receiverNameInput = document.getElementById('receiver_name');
+        const nameLabel = document.getElementById('nameLabel');
+        const nameHelp = document.getElementById('nameHelp');
 
         function syncSellerTerms() {
             const isSeller = roleSelect.value === 'seller';
@@ -435,6 +446,28 @@
             sellerTerms.disabled = !isSeller;
             if (!isSeller) {
                 sellerTerms.checked = false;
+            }
+
+            // Sembunyikan field nama penerima untuk Penjual/Seller
+            if (receiverNameBox) {
+                receiverNameBox.style.display = isSeller ? 'none' : 'block';
+            }
+            if (receiverNameInput) {
+                receiverNameInput.disabled = isSeller;
+                if (isSeller) {
+                    receiverNameInput.value = '';
+                }
+            }
+
+            // Sesuaikan label nama
+            if (nameLabel && nameHelp) {
+                if (isSeller) {
+                    nameLabel.textContent = 'Nama Lengkap Penjual';
+                    nameHelp.textContent = 'Nama pemilik toko/akun penjual Anda.';
+                } else {
+                    nameLabel.textContent = 'Nama Profil';
+                    nameHelp.textContent = 'Nama yang tampil sebagai identitas akun Anda di Campify.';
+                }
             }
         }
 

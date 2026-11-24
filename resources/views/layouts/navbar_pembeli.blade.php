@@ -100,8 +100,8 @@
               <!-- Dropdown Menu -->
               <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border hidden text-gray-800 z-50 py-1">
                 <a href="{{ route('profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-forest-50 font-medium">Profile</a>
-                <a href="{{ route('profile', ['tab' => 'purchases']) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-forest-50 font-medium">Pesanan Beli</a>
-                <a href="{{ route('profile', ['tab' => 'rentals']) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-forest-50 font-medium">Pesanan Sewa</a>
+                <a href="{{ route('profile', ['tab' => 'purchases']) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-forest-50 font-medium">Pemesanan Produk</a>
+                <a href="{{ route('profile', ['tab' => 'rentals']) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-forest-50 font-medium">Pemesanan Sewa</a>
                 
                 <hr class="my-1 border-gray-200">
                 <form action="{{ route('logout') }}" method="POST" class="block">

@@ -54,17 +54,39 @@
                 </div>
 
                 {{-- Detail Masalah & Bukti dari Pembeli --}}
+                @php
+                    $firstDetail = $order->details->first();
+                    $productStock = $firstDetail?->product ? ($firstDetail->product->stok ?? $firstDetail->product->stock ?? 0) : 0;
+                    $buyerWants = $returnRequest->resolution_type === 'refund' ? 'Refund Dana (Pengembalian Uang)' : 'Retur Barang (Tukar Unit Baru)';
+                @endphp
                 <div class="p-4 bg-light rounded-4 mb-4 border border-slate-100">
-                    <h6 class="fw-bold mb-3 text-secondary text-uppercase tracking-wider" style="font-size: 11px;">Rincian Komplain Pembeli</h6>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold text-secondary text-uppercase tracking-wider m-0" style="font-size: 11px;">Rincian Komplain Pembeli</h6>
+                        <span class="badge {{ $returnRequest->resolution_type === 'refund' ? 'bg-primary' : 'bg-warning text-dark' }} px-3 py-1.5 rounded-pill fw-bold">
+                            Permintaan Buyer: {{ $buyerWants }}
+                        </span>
+                    </div>
                     <div class="row g-3">
                         <div class="col-md-3 text-muted fw-semibold small">Alasan Masalah:</div>
                         <div class="col-md-9 text-dark fw-bold small">"{{ $returnRequest->renter_notes }}"</div>
 
-                        <div class="col-md-3 text-muted fw-semibold small">Rekening Refund:</div>
+                        <div class="col-md-3 text-muted fw-semibold small">Rekening / E-Wallet:</div>
                         <div class="col-md-9 text-dark small">
-                            <span class="fw-bold text-dark">{{ $returnRequest->buyer_refund_bank_name }} - {{ $returnRequest->buyer_refund_bank_account }}</span><br>
-                            <span class="text-muted">Atas Nama:</span> <span class="fw-bold">{{ $returnRequest->buyer_refund_bank_name_owner }}</span>
+                            <span class="fw-bold text-dark">{{ $returnRequest->buyer_refund_bank_name ?: '-' }} - {{ $returnRequest->buyer_refund_bank_account ?: '-' }}</span><br>
+                            <span class="text-muted">Atas Nama:</span> <span class="fw-bold">{{ $returnRequest->buyer_refund_bank_name_owner ?: '-' }}</span>
                         </div>
+
+                        @if($returnRequest->kurir_return || $returnRequest->resi_return)
+                        <div class="col-md-3 text-muted fw-semibold small">Kurir Pengembalian:</div>
+                        <div class="col-md-9 text-dark small">
+                            <span class="fw-bold text-emerald">{{ $returnRequest->kurir_return ?? 'J&T Express' }}</span> - Resi: <span class="fw-mono fw-bold">{{ $returnRequest->resi_return ?: 'Menunggu paket dikirim' }}</span>
+                            @if($returnRequest->resi_return)
+                                <button type="button" onclick="openSellerTrackingModal('{{ $returnRequest->resi_return }}', '{{ $returnRequest->kurir_return }}')" class="btn btn-sm btn-outline-secondary py-0 px-2 ms-2 rounded-pill" style="font-size: 10px;">
+                                    <i class="bi bi-geo-alt"></i> Lacak API Kurir
+                                </button>
+                            @endif
+                        </div>
+                        @endif
 
                         @if($returnRequest->proof_returned_image)
                             <div class="col-md-3 text-muted fw-semibold small">Bukti Masalah (Foto):</div>
@@ -82,8 +104,34 @@
                     {{-- STAGE 1: ACTION REQUIRED - TINJAU KOMPLAIN --}}
                     <div class="p-4 rounded-4 border-dashed border-2 text-dark bg-white">
                         <h5 class="fw-bold mb-2 text-dark">Tinjau Komplain & Pilih Resolusi</h5>
-                        <p class="text-muted small mb-4">Silakan tentukan apakah komplain pembeli ini valid. Jika valid, pilih resolusi yang sesuai: <strong>Refund Dana</strong> atau <strong>Replacement (Kirim Produk Pengganti)</strong>.</p>
+                        <p class="text-muted small mb-3">Silakan tentukan apakah komplain pembeli ini valid. Jika valid, pilih resolusi yang sesuai: <strong>Refund Dana</strong> atau <strong>Replacement (Kirim Produk Pengganti)</strong>.</p>
                         
+                        {{-- Cek Stok Pengganti --}}
+                        <div class="p-3 rounded-3 mb-4 {{ $productStock <= 0 ? 'bg-danger-subtle border border-danger border-opacity-25' : 'bg-light border' }}">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi {{ $productStock <= 0 ? 'bi-exclamation-triangle-fill text-danger' : 'bi-box-seam text-emerald' }} fs-5"></i>
+                                    <div>
+                                        <span class="small fw-bold d-block {{ $productStock <= 0 ? 'text-danger' : 'text-dark' }}">
+                                            Ketersediaan Stok Produk Pengganti: {{ $productStock }} Unit
+                                        </span>
+                                        @if($productStock <= 0)
+                                            <span class="text-danger small" style="font-size: 11px;">
+                                                ⚠️ Stok barang pengganti kosong! Disarankan memilih opsi <strong>Refund Dana</strong> sebagai alternatif solusi kepada pembeli.
+                                            </span>
+                                        @else
+                                            <span class="text-muted small" style="font-size: 11px;">Stok mencukupi untuk mengirimkan produk pengganti.</span>
+                                        @endif
+                                    </div>
+                                </div>
+                                @if($productStock <= 0)
+                                    <span class="badge bg-danger text-uppercase px-2.5 py-1">Stok Habis</span>
+                                @else
+                                    <span class="badge bg-success text-uppercase px-2.5 py-1">Ready</span>
+                                @endif
+                            </div>
+                        </div>
+
                         <form action="{{ route('seller.returns.review-complaint', $returnRequest->id) }}" method="POST" id="reviewComplaintForm">
                             @csrf
                             <input type="hidden" name="action" id="complaintAction" value="approve">
@@ -123,21 +171,21 @@
                                     <div class="col-md-6">
                                         <label class="p-3 border rounded-4 w-100 cursor-pointer d-block">
                                             <div class="d-flex align-items-center gap-3">
-                                                <input type="radio" name="resolution_type" value="refund" checked class="form-check-input text-rose">
+                                                <input type="radio" name="resolution_type" value="refund" {{ ($productStock <= 0 || $returnRequest->resolution_type === 'refund') ? 'checked' : '' }} class="form-check-input text-rose">
                                                 <div>
                                                     <span class="fw-bold d-block text-dark small">Refund Dana</span>
-                                                    <span class="text-muted" style="font-size: 10px;">Kembalikan uang 100%</span>
+                                                    <span class="text-muted" style="font-size: 10px;">Kembalikan uang 100% {{ $productStock <= 0 ? '(Direkomendasikan)' : '' }}</span>
                                                 </div>
                                             </div>
                                         </label>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="p-3 border rounded-4 w-100 cursor-pointer d-block">
+                                        <label class="p-3 border rounded-4 w-100 cursor-pointer d-block {{ $productStock <= 0 ? 'opacity-75 bg-light' : '' }}">
                                             <div class="d-flex align-items-center gap-3">
-                                                <input type="radio" name="resolution_type" value="replacement" class="form-check-input text-rose">
+                                                <input type="radio" name="resolution_type" value="replacement" {{ ($productStock > 0 && $returnRequest->resolution_type === 'replacement') ? 'checked' : '' }} class="form-check-input text-rose">
                                                 <div>
                                                     <span class="fw-bold d-block text-dark small">Kirim Produk Pengganti</span>
-                                                    <span class="text-muted" style="font-size: 10px;">Kirim barang baru</span>
+                                                    <span class="text-muted" style="font-size: 10px;">{{ $productStock <= 0 ? '⚠️ Stok Habis' : 'Kirim barang baru' }}</span>
                                                 </div>
                                             </div>
                                         </label>
@@ -165,11 +213,11 @@
                         <div class="p-4 bg-emerald-soft rounded-4 border border-emerald border-opacity-20 mb-4">
                             <div class="row g-2 text-xs">
                                 <div class="col-4 text-muted">Bank Tujuan:</div>
-                                <div class="col-8 fw-bold text-dark">{{ $returnRequest->buyer_refund_bank_name }}</div>
+                                <div class="col-8 fw-bold text-dark">{{ $returnRequest->buyer_refund_bank_name ?: '-' }}</div>
                                 <div class="col-4 text-muted">Nomor Rekening:</div>
-                                <div class="col-8 fw-bold text-dark">{{ $returnRequest->buyer_refund_bank_account }}</div>
+                                <div class="col-8 fw-bold text-dark">{{ $returnRequest->buyer_refund_bank_account ?: '-' }}</div>
                                 <div class="col-4 text-muted">Pemilik Rekening:</div>
-                                <div class="col-8 fw-bold text-dark">{{ $returnRequest->buyer_refund_bank_name_owner }}</div>
+                                <div class="col-8 fw-bold text-dark">{{ $returnRequest->buyer_refund_bank_name_owner ?: '-' }}</div>
                                 <div class="col-4 text-muted">Total Transfer:</div>
                                 <div class="col-8 fw-extrabold text-danger fs-6">Rp {{ number_format($returnRequest->escrow_total) }}</div>
                             </div>
@@ -187,7 +235,7 @@
                     {{-- STAGE 2B: ACTION REQUIRED - KIRIM BARANG PENGGANTI --}}
                     <div class="p-4 rounded-4 border-dashed border-2 text-dark bg-white">
                         <h5 class="fw-bold mb-2 text-dark">Kirim Produk Pengganti & Input Resi</h5>
-                        <p class="text-muted small mb-4">Anda menyetujui resolusi <strong>Kirim Produk Pengganti</strong>. Silakan packing barang pengganti dan kirimkan ke alamat pembeli di bawah ini. Jika sudah, masukkan nomor resi ekspedisinya:</p>
+                        <p class="text-muted small mb-3">Anda menyetujui resolusi <strong>Kirim Produk Pengganti</strong>. Silakan packing barang pengganti dan kirimkan ke alamat pembeli di bawah ini. Jika sudah, masukkan nomor resi ekspedisinya:</p>
                         
                         <div class="p-3 bg-light rounded-4 mb-4">
                             <small class="text-muted text-uppercase tracking-wider d-block mb-1" style="font-size: 9px;">Alamat Kirim Pembeli</small>
@@ -195,14 +243,38 @@
                                 {{ $order->shipping_address ?? 'Alamat tidak tersedia' }}<br>
                                 {{ $order->shipping_district ?? '' }}, {{ $order->shipping_city ?? '' }} {{ $order->shipping_postal_code ?? '' }}
                             </p>
+                            @if($order->shipping_phone)
+                                <small class="text-muted"><i class="bi bi-telephone-fill me-1"></i> {{ $order->shipping_phone }}</small>
+                            @endif
                         </div>
 
                         <form action="{{ route('seller.returns.send-replacement', $returnRequest->id) }}" method="POST">
                             @csrf
-                            <div class="mb-4">
-                                <label class="fw-bold text-dark mb-2">Nomor Resi Barang Pengganti</label>
-                                <input type="text" name="resi_pengganti" class="form-control rounded-3 py-3" placeholder="Masukkan resi ekspedisi pengganti (Contoh: JNE / J&T - JG2931)" required>
+                            <div class="mb-3">
+                                <label class="fw-bold text-dark mb-2 small">Pilih Ekspedisi / Kurir Pengganti</label>
+                                <select name="kurir_pengganti" id="sellerCourierSelect" class="form-select rounded-3 py-2.5">
+                                    <option value="J&T Express">J&T Express</option>
+                                    <option value="JNE Express">JNE Express</option>
+                                    <option value="SiCepat Ekspres">SiCepat Ekspres</option>
+                                    <option value="AnterAja">AnterAja</option>
+                                    <option value="POS Indonesia">POS Indonesia</option>
+                                </select>
                             </div>
+
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="fw-bold text-dark small m-0">Nomor Resi Barang Pengganti</label>
+                                    <button type="button" onclick="generateSellerWaybill()" class="btn btn-sm btn-outline-success py-1 px-2.5 rounded-pill fw-bold" style="font-size: 11px;">
+                                        ⚡ Generate Resi Otomatis (API Kurir)
+                                    </button>
+                                </div>
+                                <input type="text" name="resi_pengganti" id="sellerWaybillInput" class="form-control rounded-3 py-2.5" placeholder="Contoh: JP261124892341 atau klik tombol di atas" required>
+                            </div>
+
+                            <div class="alert alert-info py-2 px-3 rounded-3 small mb-4" style="font-size: 11px;">
+                                <i class="bi bi-info-circle me-1"></i> Biaya ongkos kirim pengiriman barang pengganti ditanggung sepenuhnya oleh <strong>Penjual (Bebas Biaya untuk Pembeli)</strong>.
+                            </div>
+
                             <button type="submit" class="btn btn-emerald w-100 py-3 rounded-4 fw-bold">
                                 <i class="bi bi-truck me-2"></i>Kirimkan Nomor Resi Pengganti
                             </button>
@@ -211,11 +283,18 @@
 
                 @elseif($returnRequest->status === 'replacement_shipping')
                     {{-- STAGE 3: WAITING FOR BUYER --}}
-                    <div class="alert alert-warning border-0 p-4 rounded-4 d-flex gap-3 align-items-center m-0">
-                        <i class="bi bi-hourglass-split fs-2 text-warning"></i>
-                        <div>
-                            <h6 class="fw-bold m-0 text-dark">Menunggu Konfirmasi Penerimaan</h6>
-                            <p class="small text-muted m-0 mt-1">Produk pengganti telah dikirim dengan nomor resi <strong>{{ $returnRequest->resi_pengganti }}</strong>. Menunggu pembeli melakukan konfirmasi penerimaan barang.</p>
+                    <div class="alert alert-warning border-0 p-4 rounded-4 text-dark m-0">
+                        <div class="d-flex gap-3 align-items-center mb-3">
+                            <i class="bi bi-hourglass-split fs-2 text-warning"></i>
+                            <div>
+                                <h6 class="fw-bold m-0 text-dark">Barang Pengganti Sedang Dikirim</h6>
+                                <p class="small text-muted m-0 mt-1">Produk pengganti telah dikirim via <strong>{{ $returnRequest->kurir_pengganti ?? 'J&T Express' }}</strong> dengan nomor resi <strong>{{ $returnRequest->resi_pengganti }}</strong>. Menunggu pembeli melakukan konfirmasi penerimaan barang.</p>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" onclick="openSellerTrackingModal('{{ $returnRequest->resi_pengganti }}', '{{ $returnRequest->kurir_pengganti }}')" class="btn btn-sm btn-dark px-3 py-2 rounded-3 fw-bold">
+                                <i class="bi bi-geo-alt me-1"></i> Lacak Pengiriman Pengganti (API Kurir)
+                            </button>
                         </div>
                     </div>
 
@@ -225,12 +304,14 @@
                         <div class="d-flex align-items-center gap-3">
                             <i class="bi bi-check-circle-fill text-success fs-2"></i>
                             <div>
-                                <h6 class="fw-bold m-0 text-success">Proses Retur Selesai Sukses!</h6>
+                                <h6 class="fw-bold m-0 text-success">
+                                    {{ $returnRequest->resolution_type === 'refund' ? 'Dana Berhasil Dikembalikan!' : 'Barang Pengganti Diterima!' }}
+                                </h6>
                                 <p class="small text-muted m-0 mt-1">
                                     @if($returnRequest->resolution_type === 'refund')
                                         Refund dana 100% sebesar <strong>Rp {{ number_format($returnRequest->escrow_total) }}</strong> telah sukses ditransfer ke rekening pembeli.
                                     @else
-                                        Barang pengganti dengan resi <strong>{{ $returnRequest->resi_pengganti }}</strong> telah sukses diterima oleh pembeli.
+                                        Barang pengganti dengan resi <strong>{{ $returnRequest->resi_pengganti }}</strong> telah sukses diterima oleh pembeli. Retur selesai.
                                     @endif
                                 </p>
                             </div>
@@ -270,6 +351,111 @@
                     rejectCard.classList.add('active');
                     resolutionSection.style.display = 'none';
                     notesLabel.innerText = 'Alasan Penolakan Komplain (Wajib)';
+                }
+            }
+
+            async function generateSellerWaybill() {
+                const courierSelect = document.getElementById('sellerCourierSelect');
+                const courierCode = courierSelect ? courierSelect.value : 'J&T Express';
+                const input = document.getElementById('sellerWaybillInput');
+
+                if (input) {
+                    input.value = 'Membuat resi via API Kurir...';
+                }
+
+                try {
+                    const res = await fetch('{{ route('courier.generate-waybill') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            courier: courierCode.includes('JNE') ? 'JNE' : (courierCode.includes('SiCepat') ? 'SICEPAT' : 'JNT'),
+                            reference_number: 'ORDER-{{ $order->id }}-REPLACEMENT'
+                        })
+                    });
+                    const data = await res.json();
+                    if (data.success && data.data) {
+                        input.value = data.data.waybill;
+                    } else {
+                        input.value = 'JP' + Math.floor(1000000000 + Math.random() * 9000000000);
+                    }
+                } catch(e) {
+                    input.value = 'JP' + Math.floor(1000000000 + Math.random() * 9000000000);
+                }
+            }
+
+            async function openSellerTrackingModal(waybill, courier) {
+                let modal = document.getElementById('sellerCourierTrackModal');
+                if (!modal) {
+                    const div = document.createElement('div');
+                    div.id = 'sellerCourierTrackModal';
+                    div.className = 'modal fade';
+                    div.setAttribute('tabindex', '-1');
+                    div.innerHTML = `
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content rounded-4 border-0 shadow">
+                                <div class="modal-header border-0 pb-0">
+                                    <h5 class="modal-title fw-bold text-dark"><i class="bi bi-truck me-2 text-emerald"></i>Live Tracking API Kurir</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body p-4" id="sellerTrackModalBody">
+                                    <div class="text-center py-4 text-muted"><div class="spinner-border text-emerald spinner-border-sm mb-2"></div><br>Menghubungi server ekspedisi...</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(div);
+                    modal = div;
+                }
+
+                const bsModal = new bootstrap.Modal(modal);
+                bsModal.show();
+
+                const body = document.getElementById('sellerTrackModalBody');
+                try {
+                    const res = await fetch('/courier-api/track/' + encodeURIComponent(waybill) + '?courier=' + encodeURIComponent(courier || ''));
+                    const result = await res.json();
+                    if (result.success && result.data) {
+                        const d = result.data;
+                        let timelineHtml = '';
+                        d.history.forEach(item => {
+                            timelineHtml += `
+                                <li class="mb-3 position-relative ps-4" style="border-left: 2px solid #10b981;">
+                                    <span class="position-absolute bg-emerald rounded-circle" style="width: 10px; height: 10px; left: -6px; top: 4px;"></span>
+                                    <div class="small fw-bold text-dark">${item.status} - <span class="text-muted fw-normal">${item.location}</span></div>
+                                    <div class="small text-muted">${item.description}</div>
+                                    <div class="text-muted" style="font-size: 10px;">${item.time}</div>
+                                </li>
+                            `;
+                        });
+
+                        body.innerHTML = `
+                            <div class="p-3 bg-light rounded-3 mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <span class="small text-muted">Ekspedisi:</span>
+                                    <span class="small fw-bold text-dark">${d.courier}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mt-1">
+                                    <span class="small text-muted">No. Resi:</span>
+                                    <span class="small fw-bold font-monospace text-emerald">${d.waybill}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mt-1">
+                                    <span class="small text-muted">Status Terkini:</span>
+                                    <span class="badge bg-success-subtle text-success small">${d.status_label}</span>
+                                </div>
+                            </div>
+                            <h6 class="small fw-bold text-uppercase tracking-wider text-muted mb-3">Riwayat Perjalanan Paket:</h6>
+                            <ul class="list-unstyled mb-0">
+                                ${timelineHtml}
+                            </ul>
+                        `;
+                    } else {
+                        body.innerHTML = `<div class="alert alert-warning small m-0">Informasi pelacakan resi belum tersedia di server kurir.</div>`;
+                    }
+                } catch(e) {
+                    body.innerHTML = `<div class="alert alert-danger small m-0">Gagal mengambil data pelacakan kurir.</div>`;
                 }
             }
         </script>
@@ -349,15 +535,37 @@
             </div>
 
             {{-- TRACKING INFO --}}
-            @if($order->no_resi)
+            @if($order->no_resi || $order->video_pengiriman)
             <div class="mt-4 p-4 rounded-4 bg-emerald-soft border-emerald border-start border-4 shadow-sm">
-                <div class="d-flex justify-content-between align-items-center">
+                @if($order->no_resi)
+                <div class="d-flex justify-content-between align-items-center mb-3">
                     <div>
                         <small class="text-emerald fw-bold text-uppercase ls-1">Nomor Resi Pengiriman</small>
                         <h4 class="fw-bold m-0 text-dark">{{ $order->no_resi }}</h4>
                     </div>
                     <i class="bi bi-truck fs-1 text-emerald opacity-25"></i>
                 </div>
+                @endif
+
+                @if($order->video_pengiriman)
+                    @php
+                        $ext = strtolower(pathinfo($order->video_pengiriman, PATHINFO_EXTENSION));
+                        $isVideo = in_array($ext, ['mp4', 'mov', 'avi', 'webm', 'mkv']);
+                    @endphp
+                    <div class="pt-3 border-top border-emerald border-opacity-25">
+                        <small class="text-emerald fw-bold text-uppercase ls-1 d-block mb-2"><i class="bi bi-camera-video me-1"></i> Bukti Pengiriman (Foto/Video)</small>
+                        @if($isVideo)
+                            <video controls class="rounded-3 shadow-sm w-100" style="max-height: 250px; background: #000;">
+                                <source src="{{ asset($order->video_pengiriman) }}">
+                                Browser Anda tidak mendukung pemutar video.
+                            </video>
+                        @else
+                            <a href="{{ asset($order->video_pengiriman) }}" target="_blank">
+                                <img src="{{ asset($order->video_pengiriman) }}" alt="Bukti Pengiriman" class="img-fluid rounded-3 shadow-sm" style="max-height: 220px; object-fit: contain;">
+                            </a>
+                        @endif
+                    </div>
+                @endif
             </div>
             @endif
         </div>
@@ -384,8 +592,17 @@
                 </span>
                 
                 <div class="d-grid gap-2">
+                    @if($order->status == 'pending')
+                        <form action="{{ route('seller.orders.updateStatus', $order->id) }}" method="POST">
+                            @csrf
+                            <input type="hidden" name="status" value="diproses">
+                            <button type="submit" class="btn btn-emerald rounded-4 py-3 fw-bold shadow-sm w-100">
+                                <i class="bi bi-check2-circle me-2"></i>Verifikasi Pembayaran & Kemas Barang
+                            </button>
+                        </form>
+                    @endif
                     @if($order->buyer->ktp_verified_at)
-                        <a href="{{ route('seller.orders.edit', $order->id) }}" class="btn btn-emerald rounded-4 py-3 fw-bold shadow-sm">
+                        <a href="{{ route('seller.orders.edit', $order->id) }}" class="btn {{ $order->status == 'pending' ? 'btn-outline-secondary' : 'btn-emerald' }} rounded-4 py-3 fw-bold shadow-sm">
                             <i class="bi bi-pencil-square me-2"></i>Update Status & Resi
                         </a>
                     @else

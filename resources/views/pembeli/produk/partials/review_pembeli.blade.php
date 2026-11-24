@@ -17,6 +17,15 @@
                 <span class="text-xs font-bold text-slate-400">{{ $existingReview->created_at->format('d M Y') }}</span>
             </div>
             <p class="text-sm text-slate-700 font-medium">"{{ $existingReview->comment }}"</p>
+            @if(!empty($existingReview->reply))
+                <div class="mt-3 p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-xs">
+                    <div class="flex items-center gap-1.5 font-bold text-emerald-800 mb-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                        <span>Respon Penjual:</span>
+                    </div>
+                    <p class="text-slate-700 leading-relaxed">{{ $existingReview->reply }}</p>
+                </div>
+            @endif
         </div>
     @else
         <form action="{{ route('review.store') }}" method="POST" class="space-y-4">

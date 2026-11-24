@@ -46,10 +46,26 @@
                 </div>
 
                 <div class="mb-4">
-                    <label class="form-label fw-bold text-muted small text-uppercase ls-1">Video Bukti Pengiriman (Wajib saat Dikirim)</label>
-                    <input type="file" name="video_pengiriman" accept="video/mp4,video/quicktime,video/x-msvideo" class="form-control border-0 bg-light rounded-3 px-3 py-2 shadow-sm">
+                    <label class="form-label fw-bold text-muted small text-uppercase ls-1">Foto / Video Bukti Pengiriman (Wajib saat Dikirim)</label>
+                    <input type="file" name="video_pengiriman" accept="video/mp4,video/quicktime,video/x-msvideo,video/webm,image/*" class="form-control border-0 bg-light rounded-3 px-3 py-2 shadow-sm">
                     @if($order->video_pengiriman)
-                        <small class="text-success mt-2 d-block"><i class="bi bi-check-circle"></i> Video sudah diunggah</small>
+                        @php
+                            $ext = strtolower(pathinfo($order->video_pengiriman, PATHINFO_EXTENSION));
+                            $isVideo = in_array($ext, ['mp4', 'mov', 'avi', 'webm', 'mkv']);
+                        @endphp
+                        <div class="mt-3 p-3 bg-light rounded-3 border">
+                            <small class="text-success fw-bold d-block mb-2"><i class="bi bi-check-circle-fill me-1"></i> Bukti Pengiriman Tersimpan:</small>
+                            @if($isVideo)
+                                <video controls class="rounded-3 shadow-sm w-100" style="max-height: 240px; background: #000;">
+                                    <source src="{{ asset($order->video_pengiriman) }}">
+                                    Browser Anda tidak mendukung tag video.
+                                </video>
+                            @else
+                                <a href="{{ asset($order->video_pengiriman) }}" target="_blank">
+                                    <img src="{{ asset($order->video_pengiriman) }}" alt="Bukti Pengiriman" class="img-fluid rounded-3 shadow-sm" style="max-height: 200px; object-fit: contain;">
+                                </a>
+                            @endif
+                        </div>
                     @endif
                 </div>
 

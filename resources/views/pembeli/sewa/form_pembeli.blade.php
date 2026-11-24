@@ -199,7 +199,7 @@
                     </div>
 
                     <button type="submit" class="w-full py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-lg transition-all shadow-lg shadow-green-200">
-                        Ajukan Sewa & Bayar
+                        Submit Bukti Bayar
                     </button>
                 </div>
             </form>

@@ -141,7 +141,7 @@ class OrderController extends Controller
                 'shipping_phone' => $request->shipping_phone,
                 'metode_pembayaran' => $request->metode_pembayaran,
                 'kurir' => $request->kurir,
-                'status' => 'diproses',
+                'status' => 'menunggu',
                 'bukti_pembayaran' => $buktiPath,
             ]);
 

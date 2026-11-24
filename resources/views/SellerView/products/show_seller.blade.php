@@ -130,6 +130,12 @@
                         @endfor
                     </div>
                     <p class="text-muted small m-0 fst-italic">"{{ $pr->ulasan ?? 'Tanpa ulasan teks' }}"</p>
+                    @if(!empty($pr->reply))
+                        <div class="mt-2 p-2 bg-light rounded-3 text-xs border-start border-3 border-emerald">
+                            <small class="fw-bold text-emerald d-block"><i class="bi bi-reply-fill"></i> Balasan Anda:</small>
+                            <span class="text-dark small">{{ $pr->reply }}</span>
+                        </div>
+                    @endif
                 </div>
                 @empty
                 <div class="text-center py-5 opacity-25">

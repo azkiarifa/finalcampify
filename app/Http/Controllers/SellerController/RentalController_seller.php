@@ -239,30 +239,60 @@ class RentalController_seller extends Controller
         }
 
         $resolution = $request->resolution_type;
+        $order = \App\Models\Pembeli\Order_pembeli::with('details.product')->find($return->order_id);
+        $orderDetail = $order?->details?->first();
+        $product = $orderDetail?->product;
+        $stock = $product ? ($product->stok ?? $product->stock ?? 0) : 0;
+
+        // Cek stok barang pengganti
+        if ($resolution === 'replacement' && $stock <= 0 && !$request->has('force_replacement')) {
+            return back()->with('error', 'Stok barang pengganti saat ini kosong (0). Silakan tawarkan atau pilih resolusi Refund Dana sebagai alternatif.');
+        }
+
         $status = ($resolution === 'refund') ? 'refund_pending' : 'approved';
 
         $return->update([
             'status' => $status,
             'resolution_type' => $resolution,
             'owner_notes' => $request->owner_notes,
+            'stock_replacement_empty' => ($stock <= 0),
+            'offer_refund_alternative' => ($resolution === 'refund' && $return->resolution_type === 'replacement'),
+            'ongkir_bearer' => 'seller',
         ]);
 
-        return back()->with('success', 'Komplain disetujui dengan resolusi: ' . ($resolution === 'refund' ? 'Refund Dana' : 'Kirim Produk Pengganti'));
+        $msg = $resolution === 'refund' 
+            ? 'Komplain disetujui dengan resolusi Refund Dana (Pengembalian Uang).' 
+            : 'Komplain disetujui dengan resolusi Pengiriman Barang Pengganti (Tukar).';
+
+        return back()->with('success', $msg);
     }
 
     public function sendReplacementItem(Request $request, $return_id)
     {
         $request->validate([
             'resi_pengganti' => 'required|string|max:255',
+            'kurir_pengganti' => 'nullable|string|max:100',
         ]);
 
         $return = \App\Models\Pembeli\Return_pembeli::findOrFail($return_id);
+
+        // Kurangi stok produk jika mencukupi
+        $order = \App\Models\Pembeli\Order_pembeli::with('details.product')->find($return->order_id);
+        $orderDetail = $order?->details?->first();
+        if ($orderDetail && $orderDetail->product) {
+            $stock = $orderDetail->product->stok ?? $orderDetail->product->stock ?? 0;
+            if ($stock > 0) {
+                $orderDetail->product->decrement('stok', $orderDetail->qty ?? 1);
+            }
+        }
+
         $return->update([
             'status' => 'replacement_shipping',
             'resi_pengganti' => $request->resi_pengganti,
+            'kurir_pengganti' => $request->kurir_pengganti ?: 'J&T Express',
+            'ongkir_bearer' => 'seller',
         ]);
 
-        $order = \App\Models\Pembeli\Order_pembeli::find($return->order_id);
         if ($order) {
             $currentNumber = $order->order_number ?? $order->id;
             if (!str_ends_with((string)$currentNumber, '-RESEND')) {
@@ -270,7 +300,7 @@ class RentalController_seller extends Controller
             }
         }
 
-        return back()->with('success', 'Barang pengganti telah dikirim dengan nomor resi ' . $request->resi_pengganti);
+        return back()->with('success', 'Barang pengganti telah dikirim dengan nomor resi ' . $request->resi_pengganti . ' via ' . ($request->kurir_pengganti ?: 'J&T Express'));
     }
 
     public function confirmRefundTransferred($return_id)
@@ -278,6 +308,7 @@ class RentalController_seller extends Controller
         $return = \App\Models\Pembeli\Return_pembeli::findOrFail($return_id);
         $return->update([
             'status' => 'completed',
+            'refund_disbursed_at' => now(),
         ]);
 
         $order = \App\Models\Pembeli\Order_pembeli::find($return->order_id);
@@ -285,7 +316,7 @@ class RentalController_seller extends Controller
             $order->update(['status' => 'selesai']);
         }
 
-        return back()->with('success', 'Refund dana telah berhasil dikonfirmasi.');
+        return back()->with('success', 'Refund dana telah berhasil dikonfirmasi. Pengembalian selesai.');
     }
 
     private function sellerRentals()

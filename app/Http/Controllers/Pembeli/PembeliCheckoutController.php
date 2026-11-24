@@ -16,22 +16,96 @@ use Carbon\Carbon;
 
 class PembeliCheckoutController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $cart = Keranjang_pembeli::with('product.store')
-            ->where('user_id', Auth::id())
-            ->get();
+        $selectedItems = $request->query('selected_items');
+
+        $query = Keranjang_pembeli::with('product.store')
+            ->where('user_id', Auth::id());
+
+        if (!empty($selectedItems)) {
+            $selectedItems = is_array($selectedItems) ? $selectedItems : explode(',', (string) $selectedItems);
+            $query->whereIn('id', $selectedItems);
+        }
+
+        $cart = $query->get();
 
         if ($cart->isEmpty()) {
             return redirect()
                 ->route('cart.index')
-                ->with('error', 'Keranjang masih kosong.');
+                ->with('error', 'Keranjang masih kosong atau tidak ada item yang dipilih.');
         }
 
         $couriers = \App\Models\Courier::where('status', 'aktif')->get();
-        $admin = \App\Models\User::where('role', 'admin')->first();
+        $admin = \App\Models\User::where('role', 'admin')
+            ->whereNotNull('bank_account_number')
+            ->where('bank_account_number', '!=', '')
+            ->first() 
+            ?? \App\Models\User::where('role', 'admin')->first();
 
-        return view('pembeli.checkout.index_pembeli', compact('cart', 'couriers', 'admin'));
+        $user = Auth::user();
+        $addresses = \App\Models\Pembeli\UserAddress::where('user_id', $user->id)
+            ->orderByDesc('is_primary')
+            ->latest()
+            ->get();
+
+        // Jika belum ada di user_addresses tapi ada alamat di profil user, inisialisasi alamat utama
+        if ($addresses->isEmpty() && !empty($user->address)) {
+            $defaultAddr = \App\Models\Pembeli\UserAddress::create([
+                'user_id' => $user->id,
+                'label' => 'Alamat Utama',
+                'receiver_name' => $user->receiver_name ?: $user->name,
+                'phone' => $user->phone ?: '',
+                'alamat' => $user->address,
+                'kota' => $user->city ?: 'Kota Bandung',
+                'kecamatan' => $user->district ?: '',
+                'kode_pos' => $user->postal_code ?: '',
+                'is_primary' => true,
+            ]);
+            $addresses = collect([$defaultAddr]);
+        }
+
+        return view('pembeli.checkout.index_pembeli', compact('cart', 'couriers', 'admin', 'addresses'));
+    }
+
+    public function storeAddress(Request $request)
+    {
+        $validated = $request->validate([
+            'label' => 'nullable|string|max:100',
+            'receiver_name' => 'required|string|max:255',
+            'phone' => 'required|string|max:25',
+            'address' => 'required|string|max:2000',
+            'city' => 'required|string|max:255',
+            'district' => 'required|string|max:255',
+            'postal_code' => 'required|string|max:20',
+            'is_primary' => 'nullable|boolean',
+        ]);
+
+        if (!empty($validated['is_primary'])) {
+            \App\Models\Pembeli\UserAddress::where('user_id', Auth::id())->update(['is_primary' => false]);
+        }
+
+        $address = \App\Models\Pembeli\UserAddress::create([
+            'user_id' => Auth::id(),
+            'label' => $validated['label'] ?: 'Alamat Tambahan',
+            'receiver_name' => $validated['receiver_name'],
+            'phone' => $validated['phone'],
+            'alamat' => $validated['address'],
+            'kota' => $validated['city'],
+            'kecamatan' => $validated['district'],
+            'kode_pos' => $validated['postal_code'],
+            'is_primary' => !empty($validated['is_primary']),
+        ]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Alamat berhasil ditambahkan.',
+                'address' => $address,
+            ]);
+        }
+
+        return back()->with('success', 'Alamat baru berhasil ditambahkan.');
     }
 
     public function produk($id)
@@ -42,14 +116,22 @@ class PembeliCheckoutController extends Controller
 
     public function process(Request $r)
     {
-        $cart = Keranjang_pembeli::with('product')
-            ->where('user_id', Auth::id())
-            ->get();
+        $selectedItems = $r->input('selected_items');
+
+        $query = Keranjang_pembeli::with('product')
+            ->where('user_id', Auth::id());
+
+        if (!empty($selectedItems)) {
+            $selectedItems = is_array($selectedItems) ? $selectedItems : explode(',', (string) $selectedItems);
+            $query->whereIn('id', $selectedItems);
+        }
+
+        $cart = $query->get();
 
         if ($cart->isEmpty()) {
             return redirect()
                 ->route('cart.index')
-                ->with('error', 'Keranjang kosong.');
+                ->with('error', 'Keranjang kosong atau item yang dipilih tidak ditemukan.');
         }
 
         // Validasi ketersediaan stok produk
@@ -82,7 +164,7 @@ class PembeliCheckoutController extends Controller
         ]);
 
         $user->update([
-            'name' => $requestData['nama'],
+            'receiver_name' => $requestData['nama'],
             'address' => $requestData['alamat'],
             'city' => $requestData['kota'],
             'district' => $requestData['kecamatan'],
@@ -116,7 +198,7 @@ class PembeliCheckoutController extends Controller
 
         $pesananData = [
             'user_id' => Auth::id(),
-            'receiver_name' => $user->name,
+            'receiver_name' => $requestData['nama'],
             'total' => $total,
             'shipping_address' => $user->address,
             'shipping_city' => $user->city,
@@ -125,7 +207,7 @@ class PembeliCheckoutController extends Controller
             'shipping_phone' => $user->phone,
             'metode_pembayaran' => $requestData['metode_pembayaran'],
             'kurir' => $requestData['shipping_method'],
-            'status' => 'diproses',
+            'status' => 'menunggu',
             'bukti_pembayaran' => $buktiPath,
         ];
 
@@ -199,7 +281,13 @@ class PembeliCheckoutController extends Controller
 
             app(\App\Services\SellerOrderService::class)->syncForOrder($pesanan->fresh(['details.product.store']));
 
-            Keranjang_pembeli::where('user_id', Auth::id())->delete();
+            // Hapus HANYA item yang dicheckout dari keranjang
+            $checkedOutIds = $cart->pluck('id')->filter()->toArray();
+            if (!empty($checkedOutIds)) {
+                Keranjang_pembeli::where('user_id', Auth::id())
+                    ->whereIn('id', $checkedOutIds)
+                    ->delete();
+            }
 
             DB::commit();
 

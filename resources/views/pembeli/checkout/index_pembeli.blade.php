@@ -1,16 +1,20 @@
- @extends('layouts.app_pembeli')
+@extends('layouts.app_pembeli')
 
 @section('content')
-<div class="py-12 max-w-4xl mx-auto px-4">
+<div class="py-10 max-w-4xl mx-auto px-4 pb-16">
 
-    <a href="{{ route('cart.index') }}" class="text-sm text-green-600 mb-4 inline-block">
-        ← Kembali ke Keranjang
+    <a href="{{ route('cart.index') }}" class="text-sm font-semibold text-emerald-600 hover:text-emerald-700 mb-4 inline-flex items-center gap-1 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+        Kembali ke Keranjang
     </a>
 
-    <h1 class="text-3xl font-bold mb-6">Checkout</h1>
+    <div class="mb-6">
+        <h1 class="text-3xl font-black text-slate-900 tracking-tight">Checkout Pesanan</h1>
+        <p class="text-sm text-slate-500 mt-1">Periksa detail barang, pilih alamat dan kurir, lalu selesaikan pembayaran.</p>
+    </div>
 
     @if($errors->any())
-        <div class="mb-6 p-4 bg-rose-50 border-2 border-rose-200 rounded-2xl text-rose-800">
+        <div class="mb-6 p-4 bg-rose-50 border-2 border-rose-200 rounded-2xl text-rose-800 shadow-sm">
             <div class="flex items-center gap-2 font-bold mb-1">
                 <span>⚠️</span>
                 <span>Mohon lengkapi data berikut:</span>
@@ -23,7 +27,14 @@
         </div>
     @endif
 
-    <form action="{{ route('checkout.process') }}" method="POST" enctype="multipart/form-data" id="checkout-form">
+    @if(session('success'))
+        <div class="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-sm font-semibold flex items-center gap-2">
+            <span>✅</span>
+            <span>{{ session('success') }}</span>
+        </div>
+    @endif
+
+    <form action="{{ route('checkout.process') }}" method="POST" enctype="multipart/form-data" id="checkout-form" class="space-y-6">
         @csrf
 
         {{-- Hidden inputs for selected items --}}
@@ -31,170 +42,363 @@
             <input type="hidden" name="selected_items[]" value="{{ $item->id }}">
         @endforeach
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {{-- ================= 1. DETAIL BARANG (Dahulukan Detail Barang) ================= --}}
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h2 class="text-lg font-bold text-slate-900 mb-4">
+                Detail Barang yang Dipesan
+            </h2>
 
-            <!-- LEFT: FORM -->
-            <div class="space-y-6">
-
-                {{-- ALAMAT PENGIRIMAN --}}
-                <div class="bg-white p-6 rounded-xl shadow-sm border">
-                    <h2 class="text-lg font-bold mb-4">Alamat Pengiriman</h2>
-                    
-                    <div class="grid gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Nama</label>
-                            <input type="text" name="nama" value="{{ auth()->user()->name }}" class="w-full rounded-lg border-gray-300" required>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Alamat Lengkap</label>
-                            <textarea name="alamat" rows="3" class="w-full rounded-lg border-gray-300" required>{{ old('alamat', auth()->user()->address) }}</textarea>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Kota</label>
-                                <select name="kota" id="city-checkout" class="w-full rounded-lg border-gray-300" required>
-                                    <option value="">Pilih Kota</option>
-                                </select>
+            <div class="divide-y divide-slate-100">
+                @php $totalSubtotal = 0; @endphp
+                @foreach($cart as $item)
+                    @php
+                        $price = $item->type === 'buy' ? $item->product->buy_price : ($item->product->rent_price * $item->duration);
+                        $itemSubtotal = $price * $item->qty;
+                        $totalSubtotal += $itemSubtotal;
+                    @endphp
+                    <div class="py-3.5 flex items-center gap-4 first:pt-0 last:pb-0">
+                        <img src="{{ $item->product->image_url }}" alt="{{ $item->product->name }}" class="w-16 h-16 object-cover rounded-xl border border-slate-100 bg-slate-50 flex-shrink-0">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider {{ $item->type === 'buy' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700' }}">
+                                    {{ $item->type === 'buy' ? 'Beli' : 'Sewa' }}
+                                </span>
+                                @if($item->type === 'rent')
+                                    <span class="text-[10px] text-slate-400 font-medium">{{ $item->duration }} Hari</span>
+                                @endif
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Kecamatan</label>
-                                <select name="kecamatan" id="district-checkout" class="w-full rounded-lg border-gray-300" required>
-                                    <option value="">Pilih Kecamatan</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Kode Pos <span class="text-rose-500">*</span></label>
-                                <input type="text" name="kode_pos" id="postal_code-checkout" class="w-full rounded-lg border-gray-300 focus:border-green-500" required value="{{ old('kode_pos', auth()->user()->postal_code) }}" placeholder="Kode Pos">
-                            </div>
+                            <h4 class="font-bold text-slate-900 text-sm truncate">{{ $item->product->name }}</h4>
+                            <p class="text-xs text-slate-500 mt-0.5">{{ $item->qty }} unit x Rp {{ number_format($price, 0, ',', '.') }}</p>
                         </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">No. Telepon</label>
-                            <input type="tel" name="telepon" value="{{ old('telepon', auth()->user()->phone) }}" class="w-full rounded-lg border-gray-300" required>
+                        <div class="text-right flex-shrink-0">
+                            <p class="text-sm font-black text-slate-800">Rp {{ number_format($itemSubtotal, 0, ',', '.') }}</p>
                         </div>
                     </div>
+                @endforeach
+            </div>
+        </div>
+
+        {{-- ================= 2. ALAMAT PENGIRIMAN (Setelah Detail Barang) ================= --}}
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-3 border-b border-slate-100">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">
+                        Alamat Pengiriman
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Nama penerima paket terpisah dari nama profil akun Anda.</p>
                 </div>
-
-                {{-- METODE PEMBAYARAN --}}
-                <div class="bg-white p-6 rounded-xl shadow-sm border">
-                    <h2 class="text-lg font-bold mb-4">Metode Pembayaran</h2>
-
-                    <div class="grid grid-cols-1 gap-4">
-                        <label class="border rounded-lg p-4 bg-gray-50 flex items-center">
-                            <input type="radio" name="metode_pembayaran" value="transfer" checked class="mr-2 text-green-600">
-                            <span class="font-semibold text-slate-800">Transfer Bank</span>
-                        </label>
-                    </div>
-
-                    {{-- INFO REKENING --}}
-                    <div id="checkout_payment_info" class="mt-4 p-4 bg-gray-50 rounded-lg">
-                        <div id="checkout_info_transfer">
-                            <p class="text-sm font-bold mb-2">Transfer ke Rekening Admin:</p>
-                            @if(isset($admin) && $admin->bank_account_number)
-                                <div class="p-3 bg-white border rounded flex justify-between items-center">
-                                    <div>
-                                        <p class="text-xs font-bold text-green-600 uppercase">{{ $admin->bank_name ?? 'Transfer Bank' }}</p>
-                                        <p class="text-sm font-bold text-lg text-slate-800">{{ $admin->bank_account_number }}</p>
-                                        <p class="text-xs text-gray-500">A/N: {{ $admin->bank_account_name }}</p>
-                                    </div>
-                                    <button type="button" onclick="navigator.clipboard.writeText('{{ $admin->bank_account_number }}').then(() => alert('Nomor rekening disalin!'))" class="text-green-600 font-bold text-xs hover:underline">Salin</button>
-                                </div>
-                            @else
-                                <p class="text-sm text-gray-500 italic">Admin belum mengatur informasi rekening tujuan.</p>
-                            @endif
-                        </div>
-                    </div>
-
-                    {{-- UPLOAD BUKTI --}}
-                    <div id="proof_upload_container" class="mt-4 pt-4 border-t border-gray-100">
-                        <label class="block text-sm font-bold text-gray-800 mb-1">
-                            Upload Bukti Pembayaran <span class="text-rose-500">*</span>
-                        </label>
-                        <p class="text-xs text-slate-500 mb-2">Unggah bukti transfer (JPG, PNG, WebP, maks. 2MB) sebelum menekan tombol Bayar Sekarang.</p>
-                        <input type="file" name="bukti_pembayaran" id="bukti_pembayaran_input" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-green-100 file:text-green-800 hover:file:bg-green-200 cursor-pointer" required>
-                        <div id="proof_preview_box" class="mt-3 hidden">
-                            <p class="text-xs text-slate-500 mb-1">Preview Bukti:</p>
-                            <img id="proof_preview_img" src="" alt="Preview Bukti" class="h-32 object-contain rounded-xl border border-slate-200 bg-slate-50 p-1">
-                        </div>
-                    </div>
-                </div>
-
-                {{-- METODE PENGIRIMAN --}}
-                <div class="bg-white p-6 rounded-xl shadow-sm border">
-                    <h2 class="text-lg font-bold mb-4">Opsi Pengiriman</h2>
-                    <div class="space-y-3">
-                        @foreach($couriers as $index => $courier)
-                        <label class="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition">
-                            <div class="flex items-center">
-                                <input type="radio" name="shipping_method" value="{{ $courier->service }}" data-price="{{ $courier->price }}" {{ $index === 0 ? 'checked' : '' }} class="mr-3 text-green-600">
-                                <div>
-                                    <p class="font-semibold text-base">{{ $courier->service }}</p>
-                                    <p class="text-xs text-gray-500">Estimasi {{ $courier->estimate ?? '-' }} &bull; Kurir: {{ $courier->name }}</p>
-                                </div>
-                            </div>
-                            <span class="font-bold text-green-700">Rp {{ number_format($courier->price, 0, ',', '.') }}</span>
-                        </label>
-                        @endforeach
-                    </div>
-                </div>
+                <button type="button" onclick="toggleNewAddressModal()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold transition border border-emerald-200 cursor-pointer self-start sm:self-auto">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    Tambah Alamat Lain
+                </button>
             </div>
 
-            <!-- RIGHT: SUMMARY -->
-            <div class="space-y-6">
-                <div class="bg-gray-900 text-white p-6 rounded-xl shadow-lg sticky top-24">
-                    <h2 class="text-xl font-bold mb-6">Ringkasan Pesanan</h2>
-
-                    <div class="space-y-4 mb-6 max-h-60 overflow-y-auto pr-2">
-                        @php $total = 0; @endphp
-                        @foreach($cart as $item)
+            {{-- Kartu Pilihan Alamat Tersimpan --}}
+            @if(isset($addresses) && $addresses->isNotEmpty())
+                <div class="mb-5">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2.5">Pilih dari Alamat Tersimpan:</label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="address-card-list">
+                        @foreach($addresses as $idx => $addr)
                             @php
-                                $price = $item->type === 'buy' ? $item->product->buy_price : $item->product->rent_price * $item->duration;
-                                $subtotal = $price * $item->qty;
-                                $total += $subtotal;
+                                $isFirst = $idx === 0;
                             @endphp
-                            <div class="flex gap-3">
-                                <img src="{{ $item->product->image_url }}" class="w-12 h-12 object-cover rounded">
-                                <div class="flex-1 min-w-0 text-sm">
-                                    <p class="font-bold truncate">{{ $item->product->name }}</p>
-                                    <p class="text-xs text-gray-400">{{ $item->qty }}x | {{ $item->type === 'buy' ? 'Beli' : 'Sewa' }}</p>
+                            <label class="relative flex flex-col p-4 rounded-xl border-2 transition cursor-pointer {{ $isFirst ? 'border-emerald-500 bg-emerald-50/40' : 'border-slate-200 hover:border-slate-300 bg-white' }} address-radio-card">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <input type="radio" name="selected_address_id" value="{{ $addr->id }}" {{ $isFirst ? 'checked' : '' }} 
+                                               class="address-picker text-emerald-600 focus:ring-emerald-500"
+                                               data-nama="{{ $addr->receiver_name }}"
+                                               data-telepon="{{ $addr->phone }}"
+                                               data-alamat="{{ $addr->address }}"
+                                               data-kota="{{ $addr->city }}"
+                                               data-kecamatan="{{ $addr->district }}"
+                                               data-kodepos="{{ $addr->postal_code }}">
+                                        <span class="text-xs font-black text-slate-800 uppercase tracking-wider">{{ $addr->label ?: 'Alamat' }}</span>
+                                    </div>
+                                    @if($addr->is_primary)
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Utama</span>
+                                    @endif
                                 </div>
-                                <p class="text-sm font-bold">Rp {{ number_format($subtotal) }}</p>
-                            </div>
+                                <div class="text-xs space-y-1 text-slate-600">
+                                    <p class="font-bold text-slate-900 text-sm">{{ $addr->receiver_name }}</p>
+                                    <p class="text-slate-500">{{ $addr->phone }}</p>
+                                    <p class="line-clamp-2">{{ $addr->address }}</p>
+                                    <p class="text-slate-500 font-medium">{{ $addr->district ? $addr->district . ', ' : '' }}{{ $addr->city }} {{ $addr->postal_code }}</p>
+                                </div>
+                            </label>
                         @endforeach
                     </div>
+                </div>
 
-                    @php
-                        $selectedCourierPrice = $couriers->first()->price ?? 0;
-                    @endphp
-
-                    <div class="border-t border-gray-800 pt-4 space-y-2 text-sm">
-                        <div class="flex justify-between text-gray-400">
-                            <span>Subtotal</span>
-                            <span>Rp {{ number_format($total, 0, ',', '.') }}</span>
-                        </div>
-                        <div class="flex justify-between text-gray-400">
-                            <span>Ongkir</span>
-                            <span id="shippingTotal">Rp {{ number_format($selectedCourierPrice, 0, ',', '.') }}</span>
-                        </div>
-                        <div class="flex justify-between text-xl font-bold pt-4 text-white">
-                            <span>Total</span>
-                            <span id="grandTotal" class="text-emerald-400">Rp {{ number_format($total + $selectedCourierPrice, 0, ',', '.') }}</span>
-                        </div>
-                    </div>
-
-                    <button type="submit" id="submitOrderBtn" class="w-full mt-8 bg-green-600 hover:bg-green-700 text-white py-3.5 rounded-xl font-bold transition shadow-lg shadow-green-900/40 flex items-center justify-center gap-2 cursor-pointer">
-                        Bayar Sekarang
+                {{-- Bar Tombol Ubah / Edit Alamat --}}
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 pb-2 border-t border-slate-100">
+                    <p class="text-xs text-slate-500 flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        Pesanan ini otomatis dikirim ke alamat yang Anda pilih di atas.
+                    </p>
+                    <button type="button" onclick="toggleEditAddress()" id="btn-toggle-edit-address" class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3.5 py-1.5 rounded-xl transition cursor-pointer self-start sm:self-auto">
+                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        <span id="btn-toggle-edit-text">Edit Alamat Pesanan Ini</span>
                     </button>
                 </div>
+            @endif
+
+            {{-- Form Input Detail Alamat (Hanya muncul jika klik Edit atau jika belum ada alamat tersimpan) --}}
+            <div id="manual-address-details" class="pt-4 border-t border-slate-100 {{ (isset($addresses) && $addresses->isNotEmpty()) ? 'hidden' : '' }}">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Detail Penerima Pesanan Ini:</p>
+                    @if(isset($addresses) && $addresses->isNotEmpty())
+                        <button type="button" onclick="toggleEditAddress()" class="text-xs text-slate-400 hover:text-slate-600 font-medium cursor-pointer">✕ Sembunyikan</button>
+                    @endif
+                </div>
+                <div class="grid gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">
+                                Nama Penerima (Nama di Alamat) <span class="text-rose-500">*</span>
+                            </label>
+                            @php
+                                $initialReceiver = old('nama', (isset($addresses) && $addresses->first()) ? $addresses->first()->receiver_name : (auth()->user()->receiver_name ?: auth()->user()->name));
+                            @endphp
+                            <input type="text" name="nama" id="receiver-name-input" value="{{ $initialReceiver }}" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" placeholder="Nama lengkap penerima barang" required>
+                            <p class="text-[10px] text-slate-400 mt-1">Nama ini dicantumkan pada label resi pengiriman (Profil: <strong>{{ auth()->user()->name }}</strong>).</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">
+                                No. Telepon Penerima <span class="text-rose-500">*</span>
+                            </label>
+                            @php
+                                $initialPhone = old('telepon', (isset($addresses) && $addresses->first()) ? $addresses->first()->phone : auth()->user()->phone);
+                            @endphp
+                            <input type="tel" name="telepon" id="receiver-phone-input" value="{{ $initialPhone }}" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" placeholder="08xxxxxxxxxx" required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">
+                            Alamat Lengkap Pengiriman <span class="text-rose-500">*</span>
+                        </label>
+                        @php
+                            $initialAddress = old('alamat', (isset($addresses) && $addresses->first()) ? $addresses->first()->address : auth()->user()->address);
+                        @endphp
+                        <textarea name="alamat" id="receiver-address-input" rows="2" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" placeholder="Nama jalan, nomor rumah, RT/RW, patokan" required>{{ $initialAddress }}</textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Kota / Kabupaten <span class="text-rose-500">*</span></label>
+                            <select name="kota" id="city-checkout" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-white" required>
+                                <option value="">Pilih Kota</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Kecamatan <span class="text-rose-500">*</span></label>
+                            <select name="kecamatan" id="district-checkout" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-white" required>
+                                <option value="">Pilih Kecamatan</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Kode Pos <span class="text-rose-500">*</span></label>
+                            @php
+                                $initialPostal = old('kode_pos', (isset($addresses) && $addresses->first()) ? $addresses->first()->postal_code : auth()->user()->postal_code);
+                            @endphp
+                            <input type="text" name="kode_pos" id="postal_code-checkout" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-slate-50" required value="{{ $initialPostal }}" placeholder="Kode Pos" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- ================= 3. OPSI PENGIRIMAN ================= --}}
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h2 class="text-lg font-bold text-slate-900 mb-4">
+                Pilih Opsi Pengiriman
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                @foreach($couriers as $index => $courier)
+                <label class="flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer hover:border-emerald-300 transition-all courier-card {{ $index === 0 ? 'border-emerald-500 bg-emerald-50/30' : 'border-slate-200 bg-white' }}">
+                    <div class="flex items-center gap-3">
+                        <input type="radio" name="shipping_method" value="{{ $courier->service }}" data-price="{{ $courier->price }}" {{ $index === 0 ? 'checked' : '' }} class="courier-radio text-emerald-600 focus:ring-emerald-500">
+                        <div>
+                            <p class="font-bold text-sm text-slate-900">{{ $courier->service }}</p>
+                            <p class="text-[11px] text-slate-500">{{ $courier->name }} &bull; Estimasi {{ $courier->estimate ?? '-' }}</p>
+                        </div>
+                    </div>
+                    <span class="font-black text-sm text-emerald-700">Rp {{ number_format($courier->price, 0, ',', '.') }}</span>
+                </label>
+                @endforeach
+            </div>
+        </div>
+
+        {{-- ================= 4. PEMBAYARAN, BUKTI TRANSFER & RINGKASAN SUBMIT ================= --}}
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h2 class="text-lg font-bold text-slate-900 mb-1">
+                Pembayaran & Bukti Transfer
+            </h2>
+            <p class="text-xs text-slate-500 mb-5">Lakukan transfer ke rekening resmi yang telah ditentukan oleh Admin di bawah ini, lalu unggah bukti transfer.</p>
+
+            {{-- Kartu Info Rekening Bank Dari Input Admin --}}
+            <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 mb-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg flex-shrink-0">
+                            🏦
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-900">Transfer Bank Escrow Resmi</h3>
+                            <p class="text-xs text-slate-500">Dana ditampung aman oleh sistem hingga barang Anda terima.</p>
+                        </div>
+                    </div>
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold self-start sm:self-auto">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Terverifikasi Admin
+                    </span>
+                </div>
+
+                {{-- Rekening Details Dari Input Admin --}}
+                @php
+                    $bankName = $admin?->bank_name ?: 'BANK BCA';
+                    $bankAccNumber = $admin?->bank_account_number ?: '872091823401';
+                    $bankAccName = $admin?->bank_account_name ?: ($admin?->name ?: 'ADMIN CAMPIFY');
+                @endphp
+                <div class="mt-4 p-4 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <span class="text-[10px] font-black uppercase text-emerald-600 tracking-wider">{{ $bankName }}</span>
+                        <p class="text-2xl font-black text-slate-900 tracking-wider font-mono my-0.5">{{ $bankAccNumber }}</p>
+                        <p class="text-xs text-slate-500">A/N: <strong class="text-slate-800">{{ $bankAccName }}</strong></p>
+                    </div>
+                    <button type="button" onclick="navigator.clipboard.writeText('{{ $bankAccNumber }}').then(() => alert('Nomor rekening berhasil disalin!'))" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition border border-slate-200 cursor-pointer self-start sm:self-center shadow-sm">
+                        <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        Salin Rekening
+                    </button>
+                </div>
+
+                <input type="hidden" name="metode_pembayaran" value="transfer">
             </div>
 
+            {{-- UPLOAD BUKTI PEMBAYARAN --}}
+            <div class="pt-2">
+                <label class="block text-sm font-bold text-slate-900 mb-1">
+                    Upload Bukti Pembayaran <span class="text-rose-500">*</span>
+                </label>
+                <p class="text-xs text-slate-500 mb-3">Unggah foto/screenshot bukti transfer (JPG, PNG, WebP, maks. 2MB) setelah memilih pengiriman.</p>
+                
+                <input type="file" name="bukti_pembayaran" id="bukti_pembayaran_input" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-100 file:text-emerald-800 hover:file:bg-emerald-200 cursor-pointer" required>
+                
+                <div id="proof_preview_box" class="mt-3 hidden">
+                    <p class="text-xs font-semibold text-slate-600 mb-1.5">Pratinjau Bukti Transfer:</p>
+                    <div class="p-2 border border-slate-200 rounded-xl bg-slate-50 w-fit">
+                        <img id="proof_preview_img" src="" alt="Pratinjau Bukti" class="h-36 object-contain rounded-lg">
+                    </div>
+                </div>
+            </div>
+
+            {{-- ================= KOLOM RINGKASAN PEMBAYARAN & TOMBOL SUBMIT (DI BAWAH UPLOAD BUKTI BAYAR) ================= --}}
+            @php
+                $selectedCourierPrice = $couriers->first()->price ?? 0;
+                $initialGrandTotal = $totalSubtotal + $selectedCourierPrice;
+            @endphp
+            <div class="mt-8 pt-6 border-t border-slate-200">
+                <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3 mb-6">
+                    <div class="flex justify-between items-center text-sm text-slate-600">
+                        <span>Subtotal Produk:</span>
+                        <span class="font-bold text-slate-800">Rp {{ number_format($totalSubtotal, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm text-slate-600">
+                        <span>Biaya Pengiriman (Ongkir):</span>
+                        <span class="font-bold text-slate-800" id="shippingTotal">Rp {{ number_format($selectedCourierPrice, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <span class="text-sm font-bold text-slate-700 uppercase tracking-wider">Total Pembayaran:</span>
+                        <span class="text-3xl font-black text-emerald-600 tracking-tight" id="grandTotal">
+                            Rp {{ number_format($initialGrandTotal, 0, ',', '.') }}
+                        </span>
+                    </div>
+                </div>
+
+                <button type="submit" id="submitOrderBtn" class="w-full inline-flex items-center justify-center gap-2.5 bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-bold text-base transition-all shadow-lg shadow-emerald-200 cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Submit Bukti Bayar
+                </button>
+            </div>
         </div>
+
     </form>
 </div>
 
+{{-- MODAL TAMBAH ALAMAT BARU --}}
+<div id="newAddressModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 sm:p-8 relative max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+            <h3 class="text-lg font-bold text-slate-900">Tambah Alamat Baru</h3>
+            <button type="button" onclick="toggleNewAddressModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <form action="{{ route('checkout.address.store') }}" method="POST" class="space-y-4">
+            @csrf
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Label Alamat (Contoh: Rumah, Kantor, Kost)</label>
+                <input type="text" name="label" class="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm focus:border-emerald-500" placeholder="Rumah" required>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Nama Penerima (Nama di Alamat) <span class="text-rose-500">*</span></label>
+                <input type="text" name="receiver_name" class="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm focus:border-emerald-500" placeholder="Nama lengkap penerima" required>
+                <p class="text-[10px] text-slate-400 mt-0.5">Terpisah dari nama profil akun Anda.</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Nomor Telepon Penerima <span class="text-rose-500">*</span></label>
+                <input type="tel" name="phone" class="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm focus:border-emerald-500" placeholder="08xxxxxxxxxx" required>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Alamat Lengkap <span class="text-rose-500">*</span></label>
+                <textarea name="address" rows="2" class="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm focus:border-emerald-500" placeholder="Jalan, nomor rumah, RT/RW, kelurahan" required></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Kota <span class="text-rose-500">*</span></label>
+                    <select name="city" id="modal-city" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs focus:border-emerald-500 bg-white" required>
+                        <option value="">Pilih Kota</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Kecamatan <span class="text-rose-500">*</span></label>
+                    <select name="district" id="modal-district" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs focus:border-emerald-500 bg-white" required>
+                        <option value="">Pilih Kecamatan</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Kode Pos <span class="text-rose-500">*</span></label>
+                    <input type="text" name="postal_code" id="modal-postal-code" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs focus:border-emerald-500 bg-slate-50" readonly required placeholder="Kode Pos">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 pt-2">
+                <input type="checkbox" name="is_primary" id="is_primary" value="1" class="rounded text-emerald-600 focus:ring-emerald-500">
+                <label for="is_primary" class="text-xs text-slate-700">Jadikan sebagai alamat utama</label>
+            </div>
+
+            <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+                <button type="button" onclick="toggleNewAddressModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
+                <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-xs font-bold text-white shadow">Simpan Alamat</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+    function toggleNewAddressModal() {
+        const modal = document.getElementById('newAddressModal');
+        if (modal) {
+            modal.classList.toggle('hidden');
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         const dataAlamat = [
             {
@@ -256,255 +460,234 @@
                 kecamatan: [
                     { nama: 'Kadipaten', kode_pos: '45452' }, { nama: 'Jatiwangi', kode_pos: '45454' }, { nama: 'Majalengka', kode_pos: '45411' }, { nama: 'Bantarujeg', kode_pos: '45464' }
                 ]
-            },
-            {
-                kota: 'DKI Jakarta',
-                kecamatan: [
-                    { nama: 'Gambir', kode_pos: '10110' }, { nama: 'Menteng', kode_pos: '10310' }, { nama: 'Kebayoran Baru', kode_pos: '12110' },
-                    { nama: 'Cilandak', kode_pos: '12430' }, { nama: 'Kelapa Gading', kode_pos: '14240' }, { nama: 'Pondok Indah', kode_pos: '12310' }
-                ]
-            },
-            {
-                kota: 'Kota Bekasi',
-                kecamatan: [
-                    { nama: 'Bekasi Barat', kode_pos: '17145' }, { nama: 'Bekasi Timur', kode_pos: '17111' }, { nama: 'Bekasi Selatan', kode_pos: '17148' }, { nama: 'Bekasi Utara', kode_pos: '17121' }
-                ]
-            },
-            {
-                kota: 'Kota Tangerang',
-                kecamatan: [
-                    { nama: 'Tangerang', kode_pos: '15111' }, { nama: 'Cipondoh', kode_pos: '15148' }, { nama: 'Karawaci', kode_pos: '15115' }, { nama: 'Serpong', kode_pos: '15310' }
-                ]
             }
         ];
 
-        const citySelect = document.getElementById('city-checkout');
-        const districtSelect = document.getElementById('district-checkout');
-        const postalInput = document.getElementById('postal_code-checkout');
-        const checkoutForm = document.getElementById('checkout-form');
-        const submitOrderBtn = document.getElementById('submitOrderBtn');
-        const proofInput = document.getElementById('bukti_pembayaran_input');
-        const proofPreviewBox = document.getElementById('proof_preview_box');
-        const proofPreviewImg = document.getElementById('proof_preview_img');
-
-        // Populate Cities
-        if (citySelect && districtSelect && postalInput) {
+        function populateKotaSelect(citySelectEl, districtSelectEl, postalInputEl, selectedCity, selectedDistrict) {
+            if (!citySelectEl) return;
+            citySelectEl.innerHTML = '<option value="">Pilih Kota</option>';
             dataAlamat.forEach(item => {
                 const opt = document.createElement('option');
                 opt.value = item.kota;
                 opt.textContent = item.kota;
-                citySelect.appendChild(opt);
+                if (selectedCity && selectedCity.toLowerCase() === item.kota.toLowerCase()) {
+                    opt.selected = true;
+                }
+                citySelectEl.appendChild(opt);
             });
 
-            // Option to add custom city
-            const otherCityOpt = document.createElement('option');
-            otherCityOpt.value = '__custom_city__';
-            otherCityOpt.textContent = '+ Kota/Kabupaten Lainnya...';
-            citySelect.appendChild(otherCityOpt);
+            function updateKecamatan() {
+                if (!districtSelectEl) return;
+                const kotaName = citySelectEl.value;
+                const kotaObj = dataAlamat.find(k => k.kota === kotaName);
+                districtSelectEl.innerHTML = '<option value="">Pilih Kecamatan</option>';
 
-            function updateDistricts(selectedCity) {
-                districtSelect.innerHTML = '<option value="">Pilih Kecamatan</option>';
-                const found = dataAlamat.find(k => k.kota.toLowerCase() === (selectedCity || '').toLowerCase());
-                if (found) {
-                    found.kecamatan.forEach(kec => {
+                if (kotaObj) {
+                    kotaObj.kecamatan.forEach(kec => {
                         const opt = document.createElement('option');
                         opt.value = kec.nama;
                         opt.textContent = kec.nama;
-                        districtSelect.appendChild(opt);
+                        opt.dataset.kodepos = kec.kode_pos;
+                        if (selectedDistrict && selectedDistrict.toLowerCase() === kec.nama.toLowerCase()) {
+                            opt.selected = true;
+                        }
+                        districtSelectEl.appendChild(opt);
                     });
                 }
-                const otherDistOpt = document.createElement('option');
-                otherDistOpt.value = '__custom_district__';
-                otherDistOpt.textContent = '+ Kecamatan Lainnya...';
-                districtSelect.appendChild(otherDistOpt);
+                updateKodePos();
             }
 
-            citySelect.addEventListener('change', function() {
-                if (citySelect.value === '__custom_city__') {
-                    const customCity = prompt('Masukkan Nama Kota / Kabupaten Anda:');
-                    if (customCity && customCity.trim()) {
-                        const opt = document.createElement('option');
-                        opt.value = customCity.trim();
-                        opt.textContent = customCity.trim();
-                        citySelect.insertBefore(opt, otherCityOpt);
-                        citySelect.value = customCity.trim();
-                    } else {
-                        citySelect.value = '';
-                    }
+            function updateKodePos() {
+                if (!districtSelectEl || !postalInputEl) return;
+                const selectedOpt = districtSelectEl.options[districtSelectEl.selectedIndex];
+                if (selectedOpt && selectedOpt.dataset.kodepos) {
+                    postalInputEl.value = selectedOpt.dataset.kodepos;
                 }
-                postalInput.value = '';
-                updateDistricts(citySelect.value);
-            });
-
-            districtSelect.addEventListener('change', function() {
-                if (districtSelect.value === '__custom_district__') {
-                    const customDist = prompt('Masukkan Nama Kecamatan Anda:');
-                    if (customDist && customDist.trim()) {
-                        const opt = document.createElement('option');
-                        opt.value = customDist.trim();
-                        opt.textContent = customDist.trim();
-                        districtSelect.insertBefore(opt, districtSelect.lastElementChild);
-                        districtSelect.value = customDist.trim();
-                    } else {
-                        districtSelect.value = '';
-                    }
-                }
-                const kota = dataAlamat.find(k => k.kota.toLowerCase() === (citySelect.value || '').toLowerCase());
-                if (kota) {
-                    const kec = kota.kecamatan.find(d => d.nama.toLowerCase() === (districtSelect.value || '').toLowerCase());
-                    if (kec && kec.kode_pos) {
-                        postalInput.value = kec.kode_pos;
-                    }
-                }
-            });
-
-            // Set default / user address if already exists in DB
-            const defaultCity = "{{ old('kota', auth()->user()->city ?? '') }}";
-            const defaultDistrict = "{{ old('kecamatan', auth()->user()->district ?? '') }}";
-
-            if (defaultCity) {
-                let cityOpt = Array.from(citySelect.options).find(o => o.value.toLowerCase() === defaultCity.toLowerCase());
-                if (!cityOpt) {
-                    cityOpt = document.createElement('option');
-                    cityOpt.value = defaultCity;
-                    cityOpt.textContent = defaultCity;
-                    citySelect.insertBefore(cityOpt, otherCityOpt);
-                }
-                citySelect.value = defaultCity;
-                updateDistricts(defaultCity);
             }
 
-            if (defaultDistrict) {
-                let distOpt = Array.from(districtSelect.options).find(o => o.value.toLowerCase() === defaultDistrict.toLowerCase());
-                if (!distOpt) {
-                    distOpt = document.createElement('option');
-                    distOpt.value = defaultDistrict;
-                    distOpt.textContent = defaultDistrict;
-                    districtSelect.insertBefore(distOpt, districtSelect.lastElementChild);
+            citySelectEl.addEventListener('change', () => {
+                selectedDistrict = '';
+                updateKecamatan();
+            });
+
+            districtSelectEl.addEventListener('change', updateKodePos);
+
+            updateKecamatan();
+        }
+
+        // Inisialisasi dropdown alamat checkout utama
+        const citySelect = document.getElementById('city-checkout');
+        const districtSelect = document.getElementById('district-checkout');
+        const postalInput = document.getElementById('postal_code-checkout');
+        const currentCity = "{{ (isset($addresses) && $addresses->first()) ? $addresses->first()->city : (auth()->user()->city ?: 'Kota Bandung') }}";
+        const currentDistrict = "{{ (isset($addresses) && $addresses->first()) ? $addresses->first()->district : (auth()->user()->district ?: '') }}";
+
+        populateKotaSelect(citySelect, districtSelect, postalInput, currentCity, currentDistrict);
+
+        // Inisialisasi dropdown modal alamat baru
+        const modalCity = document.getElementById('modal-city');
+        const modalDistrict = document.getElementById('modal-district');
+        const modalPostal = document.getElementById('modal-postal-code');
+        populateKotaSelect(modalCity, modalDistrict, modalPostal, '', '');
+
+        // Toggle Edit Form Alamat
+        window.toggleEditAddress = function() {
+            const container = document.getElementById('manual-address-details');
+            const btnText = document.getElementById('btn-toggle-edit-text');
+            if (container) {
+                container.classList.toggle('hidden');
+                if (!container.classList.contains('hidden')) {
+                    if (btnText) btnText.textContent = 'Tutup Edit Alamat';
+                    receiverNameInput?.focus();
+                } else {
+                    if (btnText) btnText.textContent = 'Edit Alamat Pesanan Ini';
                 }
-                districtSelect.value = defaultDistrict;
+            }
+        };
+
+        // Handle Pergantian Radio Pilihan Alamat
+        const addressRadios = document.querySelectorAll('.address-picker');
+        const receiverNameInput = document.getElementById('receiver-name-input');
+        const receiverPhoneInput = document.getElementById('receiver-phone-input');
+        const receiverAddressInput = document.getElementById('receiver-address-input');
+
+        addressRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                document.querySelectorAll('.address-radio-card').forEach(card => {
+                    card.classList.remove('border-emerald-500', 'bg-emerald-50/40');
+                    card.classList.add('border-slate-200', 'bg-white');
+                });
+                const parentCard = this.closest('.address-radio-card');
+                if (parentCard) {
+                    parentCard.classList.remove('border-slate-200', 'bg-white');
+                    parentCard.classList.add('border-emerald-500', 'bg-emerald-50/40');
+                }
+
+                if (receiverNameInput && this.dataset.nama) receiverNameInput.value = this.dataset.nama;
+                if (receiverPhoneInput && this.dataset.telepon) receiverPhoneInput.value = this.dataset.telepon;
+                if (receiverAddressInput && this.dataset.alamat) receiverAddressInput.value = this.dataset.alamat;
+
+                if (this.dataset.kota) {
+                    populateKotaSelect(citySelect, districtSelect, postalInput, this.dataset.kota, this.dataset.kecamatan);
+                }
+                if (postalInput && this.dataset.kodepos) {
+                    postalInput.value = this.dataset.kodepos;
+                }
+            });
+        });
+
+        // Handle Ongkir & Perhitungan Total di Kolom Ringkasan
+        const subtotal = {{ $totalSubtotal }};
+        const courierRadios = document.querySelectorAll('.courier-radio');
+        const shippingTotalEl = document.getElementById('shippingTotal');
+        const grandTotalEl = document.getElementById('grandTotal');
+
+        function updateTotals() {
+            let shippingPrice = 0;
+            courierRadios.forEach(radio => {
+                const card = radio.closest('.courier-card');
+                if (radio.checked) {
+                    shippingPrice = parseFloat(radio.dataset.price) || 0;
+                    if (card) {
+                        card.classList.remove('border-slate-200', 'bg-white');
+                        card.classList.add('border-emerald-500', 'bg-emerald-50/30');
+                    }
+                } else if (card) {
+                    card.classList.remove('border-emerald-500', 'bg-emerald-50/30');
+                    card.classList.add('border-slate-200', 'bg-white');
+                }
+            });
+
+            const grandTotal = subtotal + shippingPrice;
+            if (shippingTotalEl) {
+                shippingTotalEl.textContent = 'Rp ' + shippingPrice.toLocaleString('id-ID');
+            }
+            if (grandTotalEl) {
+                grandTotalEl.textContent = 'Rp ' + grandTotal.toLocaleString('id-ID');
             }
         }
 
-        // Preview & validation for proof of payment
-        if (proofInput) {
+        courierRadios.forEach(r => r.addEventListener('change', updateTotals));
+        updateTotals();
+
+        // Pratinjau Bukti Pembayaran
+        const proofInput = document.getElementById('bukti_pembayaran_input');
+        const proofPreviewBox = document.getElementById('proof_preview_box');
+        const proofPreviewImg = document.getElementById('proof_preview_img');
+
+        if (proofInput && proofPreviewBox && proofPreviewImg) {
             proofInput.addEventListener('change', function() {
-                const file = this.files && this.files[0];
+                const file = this.files[0];
                 if (file) {
                     if (file.size > 2 * 1024 * 1024) {
-                        alert('⚠️ Ukuran file bukti pembayaran maksimal 2MB. Silakan gunakan file gambar yang lebih kecil.');
+                        alert('Ukuran file maksimal 2MB!');
                         this.value = '';
-                        if (proofPreviewBox) proofPreviewBox.classList.add('hidden');
+                        proofPreviewBox.classList.add('hidden');
                         return;
                     }
                     const reader = new FileReader();
                     reader.onload = function(e) {
-                        if (proofPreviewImg && proofPreviewBox) {
-                            proofPreviewImg.src = e.target.result;
-                            proofPreviewBox.classList.remove('hidden');
-                        }
+                        proofPreviewImg.src = e.target.result;
+                        proofPreviewBox.classList.remove('hidden');
                     };
                     reader.readAsDataURL(file);
                 } else {
-                    if (proofPreviewBox) proofPreviewBox.classList.add('hidden');
+                    proofPreviewBox.classList.add('hidden');
                 }
             });
         }
 
-        // Shipping selection total updates
-        const shippingRadios = document.querySelectorAll('input[name="shipping_method"]');
-        const shippingTotal = document.getElementById('shippingTotal');
-        const grandTotal = document.getElementById('grandTotal');
-        const orderSubtotal = {{ $total }};
+        // Form Submit Validation
+        const checkoutForm = document.getElementById('checkout-form');
+        const submitOrderBtn = document.getElementById('submitOrderBtn');
 
-        function updateTotals() {
-            let shipping = 0;
-            const selected = document.querySelector('input[name="shipping_method"]:checked');
-            if (selected) {
-                shipping = parseFloat(selected.dataset.price) || 0;
-            }
-            if (shippingTotal) {
-                shippingTotal.textContent = 'Rp ' + shipping.toLocaleString('id-ID');
-            }
-            if (grandTotal) {
-                grandTotal.textContent = 'Rp ' + (orderSubtotal + shipping).toLocaleString('id-ID');
-            }
-        }
-
-        shippingRadios.forEach(radio => radio.addEventListener('change', updateTotals));
-        updateTotals();
-
-        // Form submit validation & user feedback
         if (checkoutForm) {
             checkoutForm.addEventListener('submit', function(e) {
-                const nameInput = document.querySelector('input[name="nama"]');
-                const addrInput = document.querySelector('textarea[name="alamat"]');
-                const phoneInput = document.querySelector('input[name="telepon"]');
-                const selectedShipping = document.querySelector('input[name="shipping_method"]:checked');
+                const revealManualAddress = () => {
+                    const c = document.getElementById('manual-address-details');
+                    if (c && c.classList.contains('hidden')) {
+                        c.classList.remove('hidden');
+                        const btnText = document.getElementById('btn-toggle-edit-text');
+                        if (btnText) btnText.textContent = 'Tutup Edit Alamat';
+                    }
+                };
 
-                if (nameInput && !nameInput.value.trim()) {
+                if (!receiverNameInput || !receiverNameInput.value.trim()) {
                     e.preventDefault();
-                    alert('⚠️ Mohon isi Nama Penerima.');
-                    nameInput.focus();
-                    nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    revealManualAddress();
+                    alert('Mohon isi Nama Penerima di alamat pengiriman.');
+                    receiverNameInput.focus();
                     return false;
                 }
-
-                if (addrInput && !addrInput.value.trim()) {
+                if (!receiverPhoneInput || !receiverPhoneInput.value.trim()) {
                     e.preventDefault();
-                    alert('⚠️ Mohon isi Alamat Lengkap pengiriman.');
-                    addrInput.focus();
-                    addrInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    revealManualAddress();
+                    alert('Mohon isi Nomor Telepon Penerima.');
+                    receiverPhoneInput.focus();
                     return false;
                 }
-
-                if (citySelect && !citySelect.value) {
+                if (!receiverAddressInput || !receiverAddressInput.value.trim()) {
                     e.preventDefault();
-                    alert('⚠️ Mohon pilih Kota pengiriman.');
+                    revealManualAddress();
+                    alert('Mohon isi Alamat Lengkap pengiriman.');
+                    receiverAddressInput.focus();
+                    return false;
+                }
+                if (!citySelect || !citySelect.value) {
+                    e.preventDefault();
+                    revealManualAddress();
+                    alert('Mohon pilih Kota pengiriman.');
                     citySelect.focus();
-                    citySelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     return false;
                 }
-
-                if (districtSelect && !districtSelect.value) {
+                if (!proofInput || !proofInput.files || proofInput.files.length === 0) {
                     e.preventDefault();
-                    alert('⚠️ Mohon pilih Kecamatan pengiriman.');
-                    districtSelect.focus();
-                    districtSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    return false;
-                }
-
-                if (postalInput && !postalInput.value.trim()) {
-                    e.preventDefault();
-                    alert('⚠️ Mohon isi Kode Pos pengiriman.');
-                    postalInput.focus();
-                    postalInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    return false;
-                }
-
-                if (phoneInput && !phoneInput.value.trim()) {
-                    e.preventDefault();
-                    alert('⚠️ Mohon isi Nomor Telepon yang dapat dihubungi.');
-                    phoneInput.focus();
-                    phoneInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    return false;
-                }
-
-                if (!selectedShipping) {
-                    e.preventDefault();
-                    alert('⚠️ Mohon pilih salah satu Opsi Pengiriman kurir.');
-                    return false;
-                }
-
-                if (proofInput && (!proofInput.files || proofInput.files.length === 0)) {
-                    e.preventDefault();
-                    alert('⚠️ Bukti Pembayaran wajib diunggah! Silakan pilih foto/gambar bukti transfer Anda terlebih dahulu.');
+                    alert('Bukti Pembayaran wajib diunggah! Silakan pilih foto bukti transfer Anda.');
                     proofInput.focus();
                     proofInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     return false;
                 }
 
-                // If all valid, set button to loading state
                 if (submitOrderBtn) {
                     submitOrderBtn.disabled = true;
                     submitOrderBtn.classList.add('opacity-75', 'cursor-not-allowed');

@@ -133,9 +133,13 @@
                         
                         <div class="d-grid gap-2">
                             @if($order->status == 'pending')
-                                <a href="/seller/orders/{{ $order->id }}/edit?status=diproses" class="btn btn-emerald rounded-3 py-2 fw-bold shadow-sm">
-                                    Konfirmasi Pesanan
-                                </a>
+                                <form action="{{ route('seller.orders.updateStatus', $order->id) }}" method="POST">
+                                    @csrf
+                                    <input type="hidden" name="status" value="diproses">
+                                    <button type="submit" class="btn btn-emerald rounded-3 py-2 fw-bold shadow-sm w-100">
+                                        <i class="bi bi-check-circle me-1"></i> Verifikasi Pembayaran
+                                    </button>
+                                </form>
                             @elseif($order->status == 'processing')
                                 <a href="/seller/orders/{{ $order->id }}/edit?status=dikirim" class="btn btn-primary rounded-3 py-2 fw-bold border-0" style="background: #3b82f6;">
                                     Kirim Barang

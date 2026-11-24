@@ -155,7 +155,18 @@
     {{-- PRODUCTS --}}
     <section class="py-20 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4">
-            <h2 class="text-3xl font-bold mb-10">Rekomendasi Produk</h2>
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-2">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-900">Rekomendasi Produk</h2>
+                    <p class="text-slate-500 text-sm mt-1">
+                        @if(!empty($hasWishlist))
+                            Dipilih khusus berdasarkan produk favorit di wishlist Anda
+                        @else
+                            Pilihan terbaik dan terlaris untuk melengkapi petualangan outdoor Anda
+                        @endif
+                    </p>
+                </div>
+            </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 @foreach($produks as $product)

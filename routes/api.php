@@ -79,4 +79,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reports/product/{productId}', [ReportController::class, 'reportProduct']);
     Route::post('/reports/store/{storeId}', [ReportController::class, 'reportStore']);
     Route::post('/reports/chat/{conversationId}', [ReportController::class, 'reportChat']);
+
+    // Courier API (Public / App Integration)
+    Route::prefix('courier')->group(function () {
+        Route::post('/cost', [\App\Http\Controllers\Api\CourierApiController::class, 'calculateCost']);
+        Route::get('/track/{waybill}', [\App\Http\Controllers\Api\CourierApiController::class, 'track']);
+        Route::post('/generate-waybill', [\App\Http\Controllers\Api\CourierApiController::class, 'generateWaybill']);
+        Route::post('/book-pickup', [\App\Http\Controllers\Api\CourierApiController::class, 'bookPickup']);
+    });
 });

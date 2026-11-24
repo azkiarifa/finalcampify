@@ -33,8 +33,33 @@
                 @forelse($messages as $message)
                     @php $isMe = ($message->sender_id == \Illuminate\Support\Facades\Auth::id()); @endphp
                     <div class="mb-4 d-flex {{ $isMe ? 'justify-content-end' : 'justify-content-start' }}">
-                        <div class="message-bubble position-relative {{ $isMe ? 'msg-me' : 'msg-other' }}">
+                        <div class="message-bubble position-relative {{ $isMe ? 'msg-me' : 'msg-other' }}" style="max-width: 75%;">
                             <div class="p-3 px-4 rounded-4 shadow-sm">
+                                @if($loop->first && isset($conversation->product) && $conversation->product)
+                                    <div class="card mb-3 border-0 bg-white shadow-sm overflow-hidden text-start" style="border-radius: 12px; border: 1px solid #e2e8f0 !important;">
+                                        <div class="card-body p-2 d-flex align-items-center gap-3">
+                                            <div class="flex-shrink-0" style="width: 55px; height: 55px; border-radius: 8px; overflow: hidden; background: #f8fafc;">
+                                                <img src="{{ $conversation->product->image_url }}" alt="{{ $conversation->product->name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                            </div>
+                                            <div class="flex-grow-1 min-w-0">
+                                                <span class="badge bg-emerald-soft text-emerald rounded-pill px-2 py-1 mb-1" style="font-size: 0.65rem;">
+                                                    {{ $conversation->product->is_rental ? 'Sewa' : 'Beli' }}
+                                                </span>
+                                                <div class="fw-bold text-dark text-truncate" style="font-size: 0.85rem;">{{ $conversation->product->name }}</div>
+                                                <div class="text-success fw-bold" style="font-size: 0.8rem;">
+                                                    @if($conversation->product->is_rental)
+                                                        Rp {{ number_format($conversation->product->rent_price ?? 0, 0, ',', '.') }} <span class="text-muted fw-normal">/hari</span>
+                                                    @else
+                                                        Rp {{ number_format($conversation->product->buy_price ?? $conversation->product->price ?? 0, 0, ',', '.') }}
+                                                    @endif
+                                                </div>
+                                            </div>
+                                            <a href="{{ route('produk.detail', $conversation->product_id) }}" target="_blank" class="btn btn-sm btn-light rounded-pill px-3 py-1 flex-shrink-0 text-muted" style="font-size: 0.75rem;">
+                                                Lihat
+                                            </a>
+                                        </div>
+                                    </div>
+                                @endif
                                 {{ $message->message }}
                             </div>
                             <small class="text-muted d-block mt-1 {{ $isMe ? 'text-end' : '' }}" style="font-size: 0.7rem;">

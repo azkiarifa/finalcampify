@@ -176,6 +176,12 @@
                     @endfor
                 </div>
                 <p class="text-muted small m-0 fst-italic">"{{ Str::limit($sr->ulasan ?? 'Tanpa ulasan teks', 60) }}"</p>
+                @if(!empty($sr->reply))
+                    <div class="mt-2 p-2 bg-light rounded-3 text-xs border-start border-3 border-emerald">
+                        <small class="fw-bold text-emerald d-block"><i class="bi bi-reply-fill"></i> Balasan Anda:</small>
+                        <span class="text-dark small">{{ $sr->reply }}</span>
+                    </div>
+                @endif
             </div>
             @empty
             <div class="text-center py-4">

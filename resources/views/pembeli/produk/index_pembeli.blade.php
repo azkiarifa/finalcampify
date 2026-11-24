@@ -52,10 +52,13 @@
         <h2 class="text-xl font-bold mb-4">Kategori Populer</h2>
 
         <div class="flex flex-wrap gap-3">
-            @foreach(['Tenda','Sleeping Bag','Alat Masak','Tas Gunung','Aksesoris'] as $kat)
-                <span class="px-4 py-2 bg-gray-100 rounded-full text-sm hover:bg-green-100 cursor-pointer">
+            @php
+                $catList = $categories ?? app(\App\Services\RecommendationService::class)->getPopularCategories(6);
+            @endphp
+            @foreach($catList as $kat)
+                <a href="{{ route('produk.category', $kat) }}" class="px-4 py-2 bg-gray-100 rounded-full text-sm font-medium hover:bg-emerald-100 hover:text-emerald-800 transition">
                     {{ $kat }}
-                </span>
+                </a>
             @endforeach
         </div>
     </div>

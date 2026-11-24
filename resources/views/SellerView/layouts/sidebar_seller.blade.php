@@ -37,8 +37,8 @@
             </button>
             <div class="collapse {{ request()->is('seller/orders*') || request()->is('seller/rentals*') ? 'show' : '' }} mt-1" id="transaksi-collapse">
                 <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small ms-5">
-                    <li class="mb-2"><a href="/seller/orders" class="link-dark d-inline-flex text-decoration-none rounded p-2 w-100 {{ request()->is('seller/orders*') ? 'fw-bold text-emerald' : 'text-muted' }}">🧾 Pesanan Baru</a></li>
-                    <li class="mb-2"><a href="/seller/rentals" class="link-dark d-inline-flex text-decoration-none rounded p-2 w-100 {{ request()->is('seller/rentals*') ? 'fw-bold text-emerald' : 'text-muted' }}">🏕️ Penyewaan Alat</a></li>
+                    <li class="mb-2"><a href="/seller/orders" class="link-dark d-inline-flex text-decoration-none rounded p-2 w-100 {{ request()->is('seller/orders*') ? 'fw-bold text-emerald' : 'text-muted' }}">🧾 Pemesanan Produk</a></li>
+                    <li class="mb-2"><a href="/seller/rentals" class="link-dark d-inline-flex text-decoration-none rounded p-2 w-100 {{ request()->is('seller/rentals*') ? 'fw-bold text-emerald' : 'text-muted' }}">🏕️ Pemesanan Sewa</a></li>
                 </ul>
             </div>
         </li>
