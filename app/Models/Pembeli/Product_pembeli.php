@@ -19,6 +19,14 @@ class Product_pembeli extends Model
         });
     }
 
+    public function scopeInStock(Builder $query): Builder
+    {
+        return $query->where(function ($q) {
+            $q->where('stock', '>', 0)
+              ->orWhere('stok', '>', 0);
+        });
+    }
+
     public function productRatings()
     {
         return $this->hasMany(ProductRating_pembeli::class, 'product_id');

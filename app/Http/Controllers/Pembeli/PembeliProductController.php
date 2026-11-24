@@ -18,6 +18,11 @@ class PembeliProductController extends Controller
     public function formSewa($id)
     {
         $produk = Product_pembeli::with('store')->findOrFail($id);
+
+        if ((int) ($produk->stock ?? $produk->stok ?? 0) <= 0) {
+            return redirect()->route('produk.sewa')->with('error', 'Maaf, stok produk sewa ini sedang habis.');
+        }
+
         $user = auth()->user();
         $admin = \App\Models\User::where('role', 'admin')->first();
         return view('pembeli.sewa.form_pembeli', compact('produk', 'user', 'admin'));
@@ -154,7 +159,8 @@ class PembeliProductController extends Controller
     // ================= BELI =================
     public function index()
     {
-        $produks = Product_pembeli::where('buy_price', '>', 0)
+        $produks = Product_pembeli::inStock()
+            ->where('buy_price', '>', 0)
             ->where('jenis_produk', 'jual')
             ->latest()
             ->paginate(12);
@@ -173,7 +179,8 @@ class PembeliProductController extends Controller
     // ================= SEWA =================
     public function rentalProducts()
     {
-        $produks = Product_pembeli::where('is_rental', true)
+        $produks = Product_pembeli::inStock()
+            ->where('is_rental', true)
             ->latest()
             ->paginate(12);
 
@@ -205,6 +212,10 @@ class PembeliProductController extends Controller
     {
         $produk = Product_pembeli::with('productRatings.user')->findOrFail($id);
 
+        if ((int) ($produk->stock ?? $produk->stok ?? 0) <= 0) {
+            return redirect()->route('produk.index')->with('error', 'Maaf, stok produk ini sedang habis.');
+        }
+
         // Jika produk bertipe sewa/rental, redirect ke halaman sewa
         if ($produk->jenis_produk === 'sewa' || $produk->is_rental) {
             return redirect()->route('produk.detail.rent', $id);
@@ -235,6 +246,10 @@ class PembeliProductController extends Controller
     {
         $produk = Product_pembeli::with('productRatings.user')->findOrFail($id);
 
+        if ((int) ($produk->stock ?? $produk->stok ?? 0) <= 0) {
+            return redirect()->route('produk.sewa')->with('error', 'Maaf, stok produk sewa ini sedang habis.');
+        }
+
         // Jika produk bertipe jual, redirect ke halaman beli
         if ($produk->jenis_produk === 'jual' && !$produk->is_rental) {
             return redirect()->route('produk.detail.buy', $id);
@@ -264,6 +279,11 @@ class PembeliProductController extends Controller
     public function checkoutProduk($id)
     {
         $produk = Product_pembeli::findOrFail($id);
+
+        if ((int) ($produk->stock ?? $produk->stok ?? 0) <= 0) {
+            return redirect()->route('produk.index')->with('error', 'Maaf, stok produk ini sedang habis.');
+        }
+
         return view('pembeli.checkout.produk_pembeli', compact('produk'));
     }
 
@@ -276,7 +296,7 @@ class PembeliProductController extends Controller
         $maxPrice = $request->max_price;
         $sort = $request->sort ?? 'latest';
 
-        $query = Product_pembeli::query();
+        $query = Product_pembeli::inStock();
 
         if ($keyword) {
             $query->where(function($q) use ($keyword) {
@@ -323,7 +343,7 @@ class PembeliProductController extends Controller
     public function category(Request $request, $category)
     {
         $type = $request->query('type', 'all');
-        $query = Product_pembeli::where('category', $category);
+        $query = Product_pembeli::inStock()->where('category', $category);
 
         if ($type === 'buy') {
             $query->where(function ($q) {
@@ -346,7 +366,7 @@ class PembeliProductController extends Controller
         $wishlistProductIds = $this->getWishlistProductIds();
 
         // Hitung total untuk badge tab
-        $allProducts = Product_pembeli::where('category', $category)->get();
+        $allProducts = Product_pembeli::inStock()->where('category', $category)->get();
         $countBuy = $allProducts->filter(function ($p) {
             return $p->jenis_produk === 'jual' || ($p->buy_price > 0 && $p->rent_price <= 0);
         })->count();

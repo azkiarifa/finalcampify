@@ -20,8 +20,9 @@ class PembeliDashboardController extends Controller
         // 2. Kategori Populer: Dihitung dari akumulasi transaksi valid (Beli + Sewa), di-cache berkala
         $categories = $recommendationService->getPopularCategories(6);
 
-        // Produk populer untuk bagian bawah
-        $popularProduks = Product_pembeli::orderBy('rating', 'desc')
+        // Produk populer untuk bagian bawah (hanya produk yang ada stok)
+        $popularProduks = Product_pembeli::inStock()
+            ->orderBy('rating', 'desc')
             ->take(8)
             ->get()
             ->map(function ($item) {
@@ -38,7 +39,7 @@ class PembeliDashboardController extends Controller
             $hasWishlist = !empty($wishlistProduksIds);
         }
 
-        $hotItems = Product_pembeli::orderBy('rating', 'desc')->take(3)->get();
+        $hotItems = Product_pembeli::inStock()->orderBy('rating', 'desc')->take(3)->get();
 
         return view('pembeli.buyer.dashboard_pembeli', compact(
             'produks',

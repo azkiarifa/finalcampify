@@ -32,8 +32,13 @@ class PembeliCartController extends Controller
 
         $produk = Product_pembeli::findOrFail($request->product_id);
 
+        $currentStock = (int) ($produk->stock ?? $produk->stok ?? 0);
+        if ($currentStock < 1) {
+            return back()->with('error', 'Maaf, stok produk ini sedang habis.');
+        }
+
         if ($request->type === 'buy') {
-            if ($request->quantity > $produk->stock) {
+            if ($request->quantity > $currentStock) {
                 return back()->with('error', 'Stok tidak mencukupi');
             }
         }
@@ -42,7 +47,7 @@ class PembeliCartController extends Controller
             if (empty($produk->rent_price) || $produk->rent_price <= 0) {
                 return back()->with('error', 'Produk ini tidak tersedia untuk sewa');
             }
-            if (($produk->stock ?? 0) < 1) {
+            if ($currentStock < 1) {
                 return back()->with('error', 'Stok produk tidak mencukupi untuk disewa');
             }
         }

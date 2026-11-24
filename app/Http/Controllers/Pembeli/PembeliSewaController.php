@@ -16,6 +16,11 @@ class PembeliSewaController extends Controller
     public function form($id)
     {
         $produk = Product_pembeli::findOrFail($id);
+
+        if ((int) ($produk->stock ?? $produk->stok ?? 0) <= 0) {
+            return redirect()->route('produk.sewa')->with('error', 'Maaf, stok produk sewa ini sedang habis.');
+        }
+
         return view('pembeli.sewa.form_pembeli', compact('produk'));
     }
 
@@ -28,6 +33,10 @@ class PembeliSewaController extends Controller
             'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
         ]);
         $produk = Product_pembeli::findOrFail($request->product_id);
+
+        if ((int) ($produk->stock ?? $produk->stok ?? 0) <= 0) {
+            return redirect()->route('produk.sewa')->with('error', 'Maaf, stok produk sewa ini sedang habis.');
+        }
         $start = \Carbon\Carbon::parse($request->tanggal_mulai);
         $end = \Carbon\Carbon::parse($request->tanggal_selesai);
         $duration = max(1, $start->diffInDays($end) + 1);

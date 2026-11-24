@@ -30,15 +30,16 @@ class RecommendationService
         $recommended = collect();
 
         if (!empty($wishlistProductIds)) {
-            // 1. Ambil produk langsung dari wishlist buyer
-            $wishlistProducts = Product_pembeli::whereIn('id', $wishlistProductIds)->get();
+            // 1. Ambil produk langsung dari wishlist buyer (hanya yang memiliki stok)
+            $wishlistProducts = Product_pembeli::inStock()->whereIn('id', $wishlistProductIds)->get();
             $recommended = $recommended->concat($wishlistProducts);
 
-            // 2. Jika wishlist belum mencapai limit, perluas dengan produk dari kategori serupa
+            // 2. Jika wishlist belum mencapai limit, perluas dengan produk dari kategori serupa (hanya yang memiliki stok)
             if ($recommended->count() < $limit) {
                 $categories = $wishlistProducts->pluck('category')->filter()->unique();
                 if ($categories->isNotEmpty()) {
-                    $similarProducts = Product_pembeli::whereIn('category', $categories)
+                    $similarProducts = Product_pembeli::inStock()
+                        ->whereIn('category', $categories)
                         ->whereNotIn('id', $wishlistProductIds)
                         ->orderBy('rating', 'desc')
                         ->latest()
@@ -50,9 +51,10 @@ class RecommendationService
             }
         }
 
-        // 3. Fallback: Jika belum ada wishlist atau hasil kosong, tampilkan produk terlaris/terbaik
+        // 3. Fallback: Jika belum ada wishlist atau hasil kosong, tampilkan produk terlaris/terbaik (hanya yang memiliki stok)
         if ($recommended->isEmpty()) {
-            $recommended = Product_pembeli::orderBy('rating', 'desc')
+            $recommended = Product_pembeli::inStock()
+                ->orderBy('rating', 'desc')
                 ->latest()
                 ->take($limit)
                 ->get();

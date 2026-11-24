@@ -1,8 +1,10 @@
-<div class="card-outdoor group bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition duration-300">
+@php
+  $currentStock = (int) ($product->stock ?? $product->stok ?? 0);
+  $isBuy = $product->jenis_produk === 'jual' || ($product->buy_price > 0 && $product->rent_price <= 0);
+@endphp
 
-  @php
-    $isBuy = $product->jenis_produk === 'jual' || ($product->buy_price > 0 && $product->rent_price <= 0);
-  @endphp
+@if($currentStock > 0)
+<div class="card-outdoor group bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition duration-300">
 
   <!-- IMAGE -->
   <div class="relative aspect-[4/3] overflow-hidden">
@@ -123,3 +125,4 @@
 
   </div>
 </div>
+@endif
