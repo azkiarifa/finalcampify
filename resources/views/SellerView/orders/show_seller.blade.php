@@ -44,9 +44,22 @@
                 <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
                     <div>
                         <span class="badge bg-danger-subtle text-danger px-3 py-2 rounded-pill fw-bold text-uppercase" style="font-size: 11px;">Komplain & Pengembalian Produk</span>
+                        @php
+                            $statusText = match($returnRequest->status) {
+                                'pending' => 'Menunggu Tinjauan Penjual',
+                                'refund_pending' => 'Menunggu Transfer Refund',
+                                'approved' => 'Komplain Disetujui (Menunggu Resi Pembeli)',
+                                'shipping' => 'Barang Retur Sedang Dikirim Pembeli',
+                                'item_received' => 'Barang Retur Diterima di Toko',
+                                'replacement_shipping' => 'Barang Pengganti Sedang Dikirim Penjual',
+                                'completed' => 'Selesai',
+                                'rejected' => 'Komplain Ditolak',
+                                default => str_replace('_', ' ', $returnRequest->status)
+                            };
+                        @endphp
                         <h4 class="fw-bold text-dark mt-2 mb-0">Status Komplain: 
                             <span class="text-uppercase" style="color: #e11d48 !important;">
-                                {{ str_replace('_', ' ', $returnRequest->status) }}
+                                {{ $statusText }}
                             </span>
                         </h4>
                     </div>
@@ -76,24 +89,35 @@
                             <span class="text-muted">Atas Nama:</span> <span class="fw-bold">{{ $returnRequest->buyer_refund_bank_name_owner ?: '-' }}</span>
                         </div>
 
-                        @if($returnRequest->kurir_return || $returnRequest->resi_return)
+                        @if($returnRequest->resi_return)
                         <div class="col-md-3 text-muted fw-semibold small">Kurir Pengembalian:</div>
                         <div class="col-md-9 text-dark small">
-                            <span class="fw-bold text-emerald">{{ $returnRequest->kurir_return ?? 'J&T Express' }}</span> - Resi: <span class="fw-mono fw-bold">{{ $returnRequest->resi_return ?: 'Menunggu paket dikirim' }}</span>
-                            @if($returnRequest->resi_return)
-                                <button type="button" onclick="openSellerTrackingModal('{{ $returnRequest->resi_return }}', '{{ $returnRequest->kurir_return }}')" class="btn btn-sm btn-outline-secondary py-0 px-2 ms-2 rounded-pill" style="font-size: 10px;">
-                                    <i class="bi bi-geo-alt"></i> Lacak API Kurir
-                                </button>
-                            @endif
+                            <span class="fw-bold text-emerald">{{ $returnRequest->kurir_return ?? 'J&T Express' }}</span> - Resi: <span class="fw-mono fw-bold">{{ $returnRequest->resi_return }}</span>
+                            <button type="button" onclick="openSellerTrackingModal('{{ $returnRequest->resi_return }}', '{{ $returnRequest->kurir_return }}')" class="btn btn-sm btn-outline-secondary py-0 px-2 ms-2 rounded-pill" style="font-size: 10px;">
+                                <i class="bi bi-geo-alt"></i> Lacak API Kurir
+                            </button>
                         </div>
                         @endif
 
                         @if($returnRequest->proof_returned_image)
-                            <div class="col-md-3 text-muted fw-semibold small">Bukti Masalah (Foto):</div>
+                            @php
+                                $ext = pathinfo($returnRequest->proof_returned_image, PATHINFO_EXTENSION);
+                                $isVideo = in_array(strtolower($ext), ['mp4', 'mov', 'webm', 'avi', 'mkv', 'ogg']);
+                            @endphp
+                            <div class="col-md-3 text-muted fw-semibold small">Bukti Masalah ({{ $isVideo ? 'Video' : 'Foto' }}):</div>
                             <div class="col-md-9">
-                                <a href="{{ asset($returnRequest->proof_returned_image) }}" target="_blank" class="d-block" style="max-width: 250px;">
-                                    <img src="{{ asset($returnRequest->proof_returned_image) }}" class="img-fluid rounded-3 border shadow-sm">
-                                </a>
+                                @if($isVideo)
+                                    <div class="rounded-3 overflow-hidden border shadow-sm" style="max-width: 380px;">
+                                        <video controls class="w-100 bg-black" style="max-height: 240px; display: block;">
+                                            <source src="{{ asset($returnRequest->proof_returned_image) }}">
+                                            Browser tidak mendukung pemutaran video.
+                                        </video>
+                                    </div>
+                                @else
+                                    <a href="{{ asset($returnRequest->proof_returned_image) }}" target="_blank" class="d-block" style="max-width: 250px;">
+                                        <img src="{{ asset($returnRequest->proof_returned_image) }}" class="img-fluid rounded-3 border shadow-sm">
+                                    </a>
+                                @endif
                             </div>
                         @endif
                     </div>
@@ -231,11 +255,51 @@
                         </form>
                     </div>
 
-                @elseif($returnRequest->status === 'approved')
+                @elseif(in_array($returnRequest->status, ['approved', 'shipping', 'item_received']))
                     {{-- STAGE 2B: ACTION REQUIRED - KIRIM BARANG PENGGANTI --}}
                     <div class="p-4 rounded-4 border-dashed border-2 text-dark bg-white">
                         <h5 class="fw-bold mb-2 text-dark">Kirim Produk Pengganti & Input Resi</h5>
-                        <p class="text-muted small mb-3">Anda menyetujui resolusi <strong>Kirim Produk Pengganti</strong>. Silakan packing barang pengganti dan kirimkan ke alamat pembeli di bawah ini. Jika sudah, masukkan nomor resi ekspedisinya:</p>
+                        
+                        @if($returnRequest->status === 'shipping')
+                            <div class="alert alert-info border-0 p-3 rounded-4 mb-3">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <i class="bi bi-box-seam-fill fs-3 text-primary"></i>
+                                        <div>
+                                            <strong class="d-block small">Pembeli Telah Mengirimkan Paket Retur!</strong>
+                                            <span class="small text-muted">
+                                                Barang fisik sedang menuju toko Anda via <strong>{{ $returnRequest->kurir_return ?? 'Ekspedisi' }}</strong> dengan No. Resi: 
+                                                <strong class="font-mono text-dark">{{ $returnRequest->resi_return }}</strong>.
+                                            </span>
+                                            @if($returnRequest->resi_return)
+                                                <button type="button" onclick="openSellerTrackingModal('{{ $returnRequest->resi_return }}', '{{ $returnRequest->kurir_return }}')" class="btn btn-sm btn-outline-primary py-0 px-2.5 ms-2 rounded-pill fw-bold" style="font-size: 10px;">
+                                                    <i class="bi bi-geo-alt"></i> Lacak Paket Pembeli
+                                                </button>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <form action="{{ route('seller.returns.confirm-received', $returnRequest->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin paket barang fisik retur dari pembeli telah sampai dan diterima di toko?')">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-success px-3 py-2 rounded-3 fw-bold shadow-sm">
+                                            <i class="bi bi-check2-circle me-1"></i> Konfirmasi Barang Diterima di Toko
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            <p class="text-muted small mb-3">Jika paket fisik retur sudah sampai dan Anda terima di toko, silakan klik tombol konfirmasi di atas. Anda juga dapat langsung mengemas produk baru pengganti dan menginput resi pengirimannya di bawah ini:</p>
+                        @elseif($returnRequest->status === 'item_received')
+                            <div class="alert alert-success border-0 p-3 rounded-4 mb-3 d-flex align-items-center gap-3">
+                                <i class="bi bi-check-circle-fill fs-3 text-success"></i>
+                                <div>
+                                    <strong class="d-block small text-success">✓ Barang Retur Fisik Telah Anda Terima di Toko!</strong>
+                                    <span class="small text-muted">
+                                        Paket retur dari pembeli telah dikonfirmasi diterima di toko pada <strong>{{ $returnRequest->actual_date ? \Carbon\Carbon::parse($returnRequest->actual_date)->translatedFormat('d M Y, H:i') : 'hari ini' }} WIB</strong>. Silakan kemas unit baru pengganti dan masukkan nomor resi pengiriman di bawah ini:
+                                    </span>
+                                </div>
+                            </div>
+                        @else
+                            <p class="text-muted small mb-3">Anda menyetujui resolusi <strong>Kirim Produk Pengganti</strong>. Silakan packing barang pengganti dan kirimkan ke alamat pembeli di bawah ini. Jika sudah, masukkan nomor resi ekspedisinya:</p>
+                        @endif
                         
                         <div class="p-3 bg-light rounded-4 mb-4">
                             <small class="text-muted text-uppercase tracking-wider d-block mb-1" style="font-size: 9px;">Alamat Kirim Pembeli</small>

@@ -250,6 +250,7 @@ Route::middleware(['auth', 'role:seller'])->prefix('seller')->name('seller.')->g
     Route::post('/rentals/{rental}/receive-item', [RentalController_seller::class, 'receiveItem'])->name('rentals.receive-item');
     Route::post('/rentals/{rental}/verify-denda', [RentalController_seller::class, 'verifyDendaPayment'])->name('rentals.verify-denda');
     Route::post('/returns/{return_id}/review-complaint', [RentalController_seller::class, 'reviewComplaint'])->name('returns.review-complaint');
+    Route::post('/returns/{return_id}/confirm-received', [RentalController_seller::class, 'confirmReceivedBySeller'])->name('returns.confirm-received');
     Route::post('/returns/{return_id}/send-replacement', [RentalController_seller::class, 'sendReplacementItem'])->name('returns.send-replacement');
     Route::post('/returns/{return_id}/confirm-refund', [RentalController_seller::class, 'confirmRefundTransferred'])->name('returns.confirm-refund');
 

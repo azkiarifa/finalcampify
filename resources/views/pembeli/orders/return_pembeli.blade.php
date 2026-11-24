@@ -87,7 +87,7 @@
                     $status = $return ? $return->status : 'start';
                     $step = 1;
                     if ($status === 'pending') $step = 2;
-                    if (in_array($status, ['approved', 'refund_pending', 'replacement_shipping', 'shipping'])) $step = 3;
+                    if (in_array($status, ['approved', 'refund_pending', 'item_received', 'replacement_shipping', 'shipping'])) $step = 3;
                     if ($status === 'completed') $step = 4;
                     if ($status === 'rejected') $step = 0;
 
@@ -554,12 +554,16 @@
                             <textarea name="alasan_return" rows="3" class="w-full rounded-2xl border-slate-200 p-3.5 focus:ring-emerald-500 focus:border-emerald-500 text-sm bg-white" placeholder="Jelaskan kendala Anda secara detail (misal: barang cacat fisik, robek, komponen tidak lengkap, dll)" required></textarea>
                         </div>
 
-                        <!-- Foto Bukti -->
+                        <!-- Video Bukti Kerusakan -->
                         <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-1.5">Foto Bukti Kondisi Barang <span class="text-rose-500">*</span></label>
-                            <div class="border-2 border-dashed border-slate-200 rounded-2xl p-5 text-center hover:border-emerald-500 transition bg-slate-50/60 cursor-pointer relative">
-                                <input type="file" name="foto_kondisi" accept="image/*" class="w-full text-xs text-slate-600 cursor-pointer" required />
-                                <p class="mt-2 text-[11px] text-slate-500">Unggah foto jelas bagian barang yang rusak / tidak sesuai (JPG, PNG, WebP, maks. 2MB).</p>
+                            <label class="block text-sm font-bold text-slate-700 mb-1.5">Video Bukti Kerusakan Barang <span class="text-rose-500">*</span></label>
+                            <div class="border-2 border-dashed border-slate-200 rounded-2xl p-5 text-center hover:border-emerald-500 transition bg-slate-50/60 relative">
+                                <input type="file" name="foto_kondisi" id="video_kondisi_input" accept="video/mp4,video/quicktime,video/webm,video/*" class="w-full text-xs text-slate-600 cursor-pointer" required onchange="previewReturnVideo(this)" />
+                                <p class="mt-2 text-[11px] text-slate-500">Unggah rekaman video kondisi fisik barang yang rusak / cacat / unboxing (MP4, MOV, WebM, maks. 20MB).</p>
+                                <div id="video_preview_container" class="mt-3 hidden">
+                                    <video id="video_preview_player" controls class="max-h-48 mx-auto rounded-xl border border-slate-200 bg-black"></video>
+                                    <p class="text-[10px] text-emerald-600 font-bold mt-1">✓ Video siap diunggah</p>
+                                </div>
                             </div>
                         </div>
 
@@ -588,43 +592,6 @@
                                 <div class="col-span-1 md:col-span-2">
                                     <label class="block text-xs font-bold text-slate-600 mb-1">Nama Pemilik Akun / Rekening <span class="text-rose-500">*</span></label>
                                     <input type="text" name="buyer_refund_bank_name_owner" id="input_refund_owner" class="w-full text-xs rounded-xl border-slate-200 p-3 focus:ring-emerald-500 focus:border-emerald-500 bg-white" placeholder="Nama lengkap sesuai buku tabungan atau akun e-wallet" required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- FORM SPESIFIK OPSI: PENGIRIMAN PENGEMBALIAN BARANG (Hanya muncul jika Retur Barang) -->
-                        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-4 hidden" id="section-replacement-shipping">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-sm">🚚</span>
-                                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-900">Kurir Pengembalian Barang ke Toko</h4>
-                                </div>
-                                <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Bebas Ongkir (Seller Tanggung)</span>
-                            </div>
-                            <p class="text-xs text-slate-500">
-                                Pilih kurir yang akan menjemput atau menerima paket pengembalian Anda. Biaya kirim balik sepenuhnya ditanggung Penjual.
-                            </p>
-
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 mb-1">Pilihan Ekspedisi Kurir</label>
-                                    <select name="kurir_return" id="courier_return_select" class="w-full text-xs rounded-xl border-slate-200 p-3 focus:ring-emerald-500 focus:border-emerald-500 bg-white">
-                                        <option value="J&T Express">J&T Express (Pickup / Drop-off)</option>
-                                        <option value="JNE Express">JNE Express (Reguler)</option>
-                                        <option value="SiCepat Ekspres">SiCepat Ekspres (BEST)</option>
-                                        <option value="AnterAja">AnterAja</option>
-                                        <option value="POS Indonesia">POS Indonesia</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 mb-1">Nomor Resi / Booking Pickup</label>
-                                    <div class="flex gap-2">
-                                        <input type="text" name="resi_return" id="resi_return_input" class="w-full text-xs rounded-xl border-slate-200 p-3 focus:ring-emerald-500 focus:border-emerald-500 bg-white" placeholder="Contoh: JP293108234 (Bisa diisi nanti / generate)">
-                                        <button type="button" onclick="openBuyerPickupModal()" class="shrink-0 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer" title="Jadwalkan Kurir Menjemput Paket">
-                                            🚚 Pickup
-                                        </button>
-                                    </div>
-                                    <input type="hidden" name="booking_code_return" id="booking_code_return_input">
                                 </div>
                             </div>
                         </div>
@@ -662,20 +629,33 @@
                                     {{ $return->buyer_refund_bank_name ?: '-' }} - {{ $return->buyer_refund_bank_account ?: '-' }} a/n {{ $return->buyer_refund_bank_name_owner ?: '-' }}
                                 </span>
 
-                                @if($return->resolution_type === 'replacement')
+                                @if($return->resolution_type === 'replacement' && $return->resi_return)
                                 <span class="text-slate-400">Kurir Pengembalian:</span>
                                 <span class="col-span-2 font-bold text-emerald-700">
-                                    {{ $return->kurir_return ?? 'J&T Express' }} {{ $return->resi_return ? '(' . $return->resi_return . ')' : '(Belum kirim)' }}
+                                    {{ $return->kurir_return ?? 'J&T Express' }} ({{ $return->resi_return }})
                                 </span>
                                 @endif
                             </div>
 
                             @if($return->proof_returned_image)
+                            @php
+                                $ext = pathinfo($return->proof_returned_image, PATHINFO_EXTENSION);
+                                $isVideo = in_array(strtolower($ext), ['mp4', 'mov', 'webm', 'avi', 'mkv', 'ogg']);
+                            @endphp
                             <div class="pt-3 border-t border-slate-200">
-                                <p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Bukti Fisik Barang Diunggah:</p>
-                                <a href="{{ asset($return->proof_returned_image) }}" target="_blank" class="inline-block rounded-xl overflow-hidden border border-slate-200 shadow-sm max-w-xs">
-                                    <img src="{{ asset($return->proof_returned_image) }}" class="w-full max-h-40 object-cover">
-                                </a>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase mb-2">Bukti Fisik Barang Diunggah ({{ $isVideo ? 'Video' : 'Foto' }}):</p>
+                                @if($isVideo)
+                                    <div class="rounded-xl overflow-hidden border border-slate-200 shadow-sm max-w-sm">
+                                        <video controls class="w-full max-h-52 bg-black">
+                                            <source src="{{ asset($return->proof_returned_image) }}">
+                                            Browser Anda tidak mendukung tag video.
+                                        </video>
+                                    </div>
+                                @else
+                                    <a href="{{ asset($return->proof_returned_image) }}" target="_blank" class="inline-block rounded-xl overflow-hidden border border-slate-200 shadow-sm max-w-xs">
+                                        <img src="{{ asset($return->proof_returned_image) }}" class="w-full max-h-40 object-cover">
+                                    </a>
+                                @endif
                             </div>
                             @endif
                         </div>
@@ -802,6 +782,48 @@
                                     Lacak Pengiriman (API Kurir)
                                 </button>
                             </div>
+                        </div>
+                    </div>
+
+                @elseif($return && $return->status === 'item_received')
+                    <!-- STAGE: BARANG SUDAH SAMPAI DI TOKO PENJUAL -->
+                    <div class="space-y-6">
+                        <div class="text-center py-6">
+                            <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-900 mb-1">Barang Retur Telah Diterima Penjual</h3>
+                            <p class="text-slate-500 text-xs max-w-md mx-auto">
+                                Penjual telah menerima paket barang retur Anda di toko fisik. Saat ini Penjual sedang memeriksa kondisi barang dan mempersiapkan unit produk baru pengganti untuk segera dikirimkan.
+                            </p>
+                        </div>
+
+                        <!-- Card Info Resi Pengembalian -->
+                        <div class="p-5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                                <div>
+                                    <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Status Pengiriman Balik (Buyer ke Seller)</span>
+                                    <h4 class="text-sm font-black text-slate-900 mt-0.5">{{ $return->kurir_return ?? 'J&T Express' }} &bull; <span class="font-mono text-emerald-700">{{ $return->resi_return }}</span></h4>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 self-start sm:self-auto">
+                                    ✓ Telah Diterima di Toko Penjual
+                                </span>
+                            </div>
+                            <div class="flex items-center justify-between text-xs text-slate-500">
+                                <span>Diterima pada: <strong>{{ $return->actual_date ? \Carbon\Carbon::parse($return->actual_date)->translatedFormat('d M Y, H:i') : '-' }} WIB</strong></span>
+                                <button type="button" onclick="openBuyerTrackingModal('{{ $return->resi_return }}', '{{ $return->kurir_return }}')" class="text-emerald-700 font-bold hover:underline">
+                                    Lihat Riwayat Ekspedisi
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-blue-50/70 rounded-2xl border border-blue-200 text-xs text-blue-900">
+                            <div class="flex items-center gap-2 font-bold mb-1">
+                                <span class="text-sm">📦</span> Langkah Selanjutnya:
+                            </div>
+                            <p class="text-blue-800 leading-relaxed">
+                                Penjual akan mengirimkan unit baru pengganti ke alamat Anda dan menginputkan nomor resi pengiriman pengganti. Anda akan mendapatkan notifikasi begitu paket unit baru dikirimkan.
+                            </p>
                         </div>
                     </div>
 
@@ -1022,10 +1044,22 @@
 </div>
 
 <script>
+function previewReturnVideo(input) {
+    const container = document.getElementById('video_preview_container');
+    const player = document.getElementById('video_preview_player');
+    if (!container || !player) return;
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        player.src = URL.createObjectURL(file);
+        container.classList.remove('hidden');
+    } else {
+        container.classList.add('hidden');
+    }
+}
+
 function toggleResolutionChoice(type) {
     const cardRefund = document.getElementById('card-resolution-refund');
     const cardReplacement = document.getElementById('card-resolution-replacement');
-    const sectionShipping = document.getElementById('section-replacement-shipping');
     const accountTitle = document.getElementById('account-section-title');
     const accountBadge = document.getElementById('account-section-badge');
     const accountDesc = document.getElementById('account-section-desc');
@@ -1047,9 +1081,6 @@ function toggleResolutionChoice(type) {
         if (checkRefund) checkRefund.classList.remove('hidden');
         if (checkReplacement) checkReplacement.classList.add('hidden');
 
-        if (sectionShipping) {
-            sectionShipping.classList.add('hidden');
-        }
         if (accountTitle) accountTitle.innerText = 'Rekening / E-Wallet Tujuan (Refund Dana)';
         if (accountBadge) {
             accountBadge.innerText = 'Wajib Diisi';
@@ -1070,9 +1101,6 @@ function toggleResolutionChoice(type) {
         if (checkReplacement) checkReplacement.classList.remove('hidden');
         if (checkRefund) checkRefund.classList.add('hidden');
 
-        if (sectionShipping) {
-            sectionShipping.classList.remove('hidden');
-        }
         if (accountTitle) accountTitle.innerText = 'Rekening / E-Wallet Cadangan (Opsional)';
         if (accountBadge) {
             accountBadge.innerText = 'Opsional / Cadangan';

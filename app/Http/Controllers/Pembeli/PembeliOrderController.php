@@ -214,7 +214,7 @@ class PembeliOrderController extends Controller
         
         $rules = [
             'resolution_type' => 'required|in:refund,replacement',
-            'foto_kondisi' => 'required|file|mimes:jpg,jpeg,png,webp,mp4,mov,avi|max:10240',
+            'foto_kondisi' => 'required|file|mimes:mp4,mov,avi,webm,mkv,jpg,jpeg,png,webp|max:20480',
             'alasan_return' => 'required|string|max:500',
         ];
 
@@ -241,9 +241,16 @@ class PembeliOrderController extends Controller
                 return back()->with('error', 'Video/Foto pengembalian tidak boleh sama dengan bukti yang dikirim oleh penjual.');
             }
 
+            $ext = strtolower($file->getClientOriginalExtension());
             $filename = 'return_' . time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('assets/images'), $filename);
-            $fotoKondisiPath = 'assets/images/' . $filename;
+            $folder = in_array($ext, ['mp4', 'mov', 'webm', 'avi', 'mkv']) ? 'assets/videos' : 'assets/images';
+
+            if (!file_exists(public_path($folder))) {
+                @mkdir(public_path($folder), 0777, true);
+            }
+
+            $file->move(public_path($folder), $filename);
+            $fotoKondisiPath = $folder . '/' . $filename;
         }
 
         $return = Return_pembeli::firstOrNew([
@@ -258,9 +265,9 @@ class PembeliOrderController extends Controller
         $return->fill([
             'rental_id' => null,
             'resolution_type' => $resolutionType,
-            'resi_return' => $request->resi_return ?: null,
-            'kurir_return' => $request->kurir_return ?: 'J&T Express',
-            'booking_code_return' => $request->booking_code_return ?: null,
+            'resi_return' => null,
+            'kurir_return' => null,
+            'booking_code_return' => null,
             'ongkir_bearer' => 'seller',
             'proof_returned_image' => $fotoKondisiPath,
             'tanggal_pengembalian' => now(),

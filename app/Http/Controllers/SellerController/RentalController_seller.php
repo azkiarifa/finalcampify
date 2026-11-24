@@ -267,6 +267,18 @@ class RentalController_seller extends Controller
         return back()->with('success', $msg);
     }
 
+    public function confirmReceivedBySeller($return_id)
+    {
+        $return = \App\Models\Pembeli\Return_pembeli::findOrFail($return_id);
+
+        $return->update([
+            'status' => 'item_received',
+            'actual_date' => now(),
+        ]);
+
+        return back()->with('success', 'Barang retur dari pembeli telah dikonfirmasi diterima di toko. Silakan kemas dan kirimkan unit produk pengganti.');
+    }
+
     public function sendReplacementItem(Request $request, $return_id)
     {
         $request->validate([
