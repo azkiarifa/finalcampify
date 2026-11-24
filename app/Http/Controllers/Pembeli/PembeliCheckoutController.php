@@ -56,10 +56,10 @@ class PembeliCheckoutController extends Controller
                 'label' => 'Alamat Utama',
                 'receiver_name' => $user->receiver_name ?: $user->name,
                 'phone' => $user->phone ?: '',
-                'alamat' => $user->address,
-                'kota' => $user->city ?: 'Kota Bandung',
-                'kecamatan' => $user->district ?: '',
-                'kode_pos' => $user->postal_code ?: '',
+                'address' => $user->address,
+                'city' => $user->city ?: 'Kota Bandung',
+                'district' => $user->district ?: '',
+                'postal_code' => $user->postal_code ?: '',
                 'is_primary' => true,
             ]);
             $addresses = collect([$defaultAddr]);
@@ -90,10 +90,10 @@ class PembeliCheckoutController extends Controller
             'label' => $validated['label'] ?: 'Alamat Tambahan',
             'receiver_name' => $validated['receiver_name'],
             'phone' => $validated['phone'],
-            'alamat' => $validated['address'],
-            'kota' => $validated['city'],
-            'kecamatan' => $validated['district'],
-            'kode_pos' => $validated['postal_code'],
+            'address' => $validated['address'],
+            'city' => $validated['city'],
+            'district' => $validated['district'],
+            'postal_code' => $validated['postal_code'],
             'is_primary' => !empty($validated['is_primary']),
         ]);
 

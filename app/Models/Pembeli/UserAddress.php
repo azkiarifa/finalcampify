@@ -13,15 +13,16 @@ class UserAddress extends Model
         'label',
         'receiver_name',
         'phone',
-        'alamat',
-        'kota',
-        'kecamatan',
-        'kode_pos',
-        'is_primary',
         'address',
         'city',
         'district',
         'postal_code',
+        'is_primary',
+        // Compatibility aliases
+        'alamat',
+        'kota',
+        'kecamatan',
+        'kode_pos',
     ];
 
     protected $casts = [
@@ -33,43 +34,47 @@ class UserAddress extends Model
         return $this->belongsTo(\App\Models\User::class, 'user_id');
     }
 
-    public function setAddressAttribute($value)
+    // Mutator & Accessor for Indonesian alias 'alamat' -> 'address'
+    public function setAlamatAttribute($value)
     {
-        $this->attributes['alamat'] = $value;
+        $this->attributes['address'] = $value;
     }
 
-    public function getAddressAttribute()
+    public function getAlamatAttribute()
     {
-        return $this->attributes['alamat'] ?? '';
+        return $this->attributes['address'] ?? '';
     }
 
-    public function setCityAttribute($value)
+    // Mutator & Accessor for Indonesian alias 'kota' -> 'city'
+    public function setKotaAttribute($value)
     {
-        $this->attributes['kota'] = $value;
+        $this->attributes['city'] = $value;
     }
 
-    public function getCityAttribute()
+    public function getKotaAttribute()
     {
-        return $this->attributes['kota'] ?? '';
+        return $this->attributes['city'] ?? '';
     }
 
-    public function setDistrictAttribute($value)
+    // Mutator & Accessor for Indonesian alias 'kecamatan' -> 'district'
+    public function setKecamatanAttribute($value)
     {
-        $this->attributes['kecamatan'] = $value;
+        $this->attributes['district'] = $value;
     }
 
-    public function getDistrictAttribute()
+    public function getKecamatanAttribute()
     {
-        return $this->attributes['kecamatan'] ?? '';
+        return $this->attributes['district'] ?? '';
     }
 
-    public function setPostalCodeAttribute($value)
+    // Mutator & Accessor for Indonesian alias 'kode_pos' -> 'postal_code'
+    public function setKodePosAttribute($value)
     {
-        $this->attributes['kode_pos'] = $value;
+        $this->attributes['postal_code'] = $value;
     }
 
-    public function getPostalCodeAttribute()
+    public function getKodePosAttribute()
     {
-        return $this->attributes['kode_pos'] ?? '';
+        return $this->attributes['postal_code'] ?? '';
     }
 }
