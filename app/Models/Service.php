@@ -85,4 +85,20 @@ class Service extends Model
 
         return (int) ($this->base_price + $additional);
     }
+
+    /**
+     * Total unit yang pernah dipasok dari seluruh vendor
+     */
+    public function getTotalPurchasedQuantityAttribute(): int
+    {
+        return (int) $this->stockPurchases()->sum('quantity');
+    }
+
+    /**
+     * Total modal pengadaan yang pernah dikeluarkan ke vendor
+     */
+    public function getTotalCapitalInvestmentAttribute(): int
+    {
+        return (int) $this->stockPurchases()->sum('total_cost');
+    }
 }

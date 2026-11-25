@@ -35,11 +35,6 @@
                     <textarea name="description" rows="4" class="form-control border-0 bg-light rounded-3 px-4 py-3">{{ old('description', $category->description) }}</textarea>
                 </div>
 
-                <div class="mb-4">
-                    <label class="form-label fw-bold text-muted small text-uppercase ls-1">Ikon Bootstrap</label>
-                    <input type="text" name="icon" class="form-control border-0 bg-light rounded-3 px-4" value="{{ old('icon', $category->icon ?? 'bi-tag') }}">
-                </div>
-
                 <div class="d-flex justify-content-end gap-3 mt-5">
                     <a href="{{ route('seller.categories.index') }}" class="btn btn-light rounded-pill px-4">Batal</a>
                     <button type="submit" class="btn btn-emerald rounded-pill px-5">Perbarui Kategori</button>

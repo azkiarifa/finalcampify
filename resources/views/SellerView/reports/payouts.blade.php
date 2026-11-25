@@ -202,8 +202,8 @@
     </div>
 
     @if($payoutOrders->hasPages())
-        <div class="p-4 border-top bg-light">
-            {{ $payoutOrders->links() }}
+        <div class="p-3 px-4 border-top bg-white pagination-container">
+            {{ $payoutOrders->links('pagination::bootstrap-5') }}
         </div>
     @endif
 </div>
@@ -219,5 +219,57 @@
     .bg-warning-subtle { background-color: #fffbeb !important; color: #b45309 !important; }
     .bg-success-subtle { background-color: #ecfdf5 !important; color: #047857 !important; }
     .bg-danger-subtle { background-color: #fef2f2 !important; color: #b91c1c !important; }
+    
+    /* Pagination Styling - Clean, Symmetrical & Modern */
+    .pagination-container nav {
+        width: 100%;
+    }
+    .pagination-container p {
+        margin-bottom: 0 !important;
+    }
+    .pagination {
+        margin: 0;
+        gap: 6px;
+        display: flex;
+        align-items: center;
+    }
+    .page-item {
+        display: inline-flex;
+    }
+    .page-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
+        padding: 0 10px;
+        color: #475569;
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px !important;
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+    .page-link:hover {
+        background-color: #f8fafc;
+        color: #059669;
+        border-color: #cbd5e1;
+    }
+    .page-item.active .page-link {
+        background-color: #10B981 !important;
+        border-color: #10B981 !important;
+        color: #ffffff !important;
+        font-weight: 700;
+        box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.25);
+    }
+    .page-item.disabled .page-link {
+        color: #94a3b8 !important;
+        background-color: #f8fafc !important;
+        border-color: #e2e8f0 !important;
+        cursor: not-allowed;
+    }
 </style>
 @endsection

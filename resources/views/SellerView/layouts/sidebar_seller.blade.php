@@ -1,7 +1,12 @@
-<div class="sidebar d-flex flex-column flex-shrink-0 p-3 bg-white border-right" style="width: 280px; height: 100vh; position: fixed; left: 0; top: 0; z-index: 1000; overflow-y: auto; transition: all 0.3s ease;">
-    <div class="brand-section px-3 py-4 mb-3">
-        <h3 class="brand-text m-0 fw-bold" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">CAMPIFY.</h3>
-        <small class="text-muted fw-semibold">SELLER HUB PORTAL</small>
+<div class="sidebar d-flex flex-column flex-shrink-0 p-3 bg-white border-end" id="sellerSidebar">
+    <div class="brand-section px-3 py-4 mb-3 d-flex justify-content-between align-items-center">
+        <div>
+            <h3 class="brand-text m-0 fw-bold" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">CAMPIFY.</h3>
+            <small class="text-muted fw-semibold">SELLER HUB PORTAL</small>
+        </div>
+        <button type="button" id="sidebarCloseBtn" class="btn btn-sm btn-light rounded-circle p-1 d-lg-none text-muted" style="width: 34px; height: 34px;" title="Tutup Menu">
+            <i class="bi bi-x-lg fs-6"></i>
+        </button>
     </div>
 
     <ul class="nav nav-pills flex-column mb-auto px-2">

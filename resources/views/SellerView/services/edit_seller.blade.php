@@ -53,10 +53,10 @@
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-bold text-muted small text-uppercase ls-1">Skema Layanan</label>
+                        <label class="form-label fw-bold text-muted small text-uppercase ls-1">Tipe Layanan</label>
                         <select name="service_type" id="service_type" class="form-select form-select-lg border-0 bg-light rounded-3 px-4" required>
-                            <option value="sewa" {{ old('service_type', $service->service_type) == 'sewa' ? 'selected' : '' }}>🏕️ Penyewaan Alat</option>
-                            <option value="jual" {{ old('service_type', $service->service_type) == 'jual' ? 'selected' : '' }}>🛍️ Jual Beli Barang</option>
+                            <option value="sewa" {{ old('service_type', $service->service_type) == 'sewa' ? 'selected' : '' }}>🏕️ Sewa Alat</option>
+                            <option value="jual" {{ old('service_type', $service->service_type) == 'jual' ? 'selected' : '' }}>🛍️ Jual Beli</option>
                         </select>
                     </div>
                 </div>
@@ -69,39 +69,53 @@
 
             {{-- CARD 2: RIWAYAT PENGADAAN & PENAMBAHAN STOK UNIT (RESTOCK) --}}
             <div class="card card-modern border-0 p-4 p-md-5 mb-4 border-start border-4 border-emerald">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold m-0 text-dark">
-                        <i class="bi bi-clock-history text-emerald me-2"></i>Riwayat Pengadaan & Tambah Stok (Restock)
-                    </h5>
-                    <span class="badge bg-emerald text-white rounded-pill px-3 py-1">
-                        Stok Saat Ini: {{ $service->stock }} Unit
-                    </span>
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <div>
+                        <h5 class="fw-bold m-0 text-dark">
+                            <i class="bi bi-clock-history text-emerald me-2"></i>Riwayat Pengadaan & Tambah Stok (Restock)
+                        </h5>
+                        <p class="text-muted small m-0 mt-1">
+                            Data pembelian dari vendor menambah stok alat secara otomatis.
+                        </p>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-emerald text-white rounded-pill px-3 py-1.5 fw-bold">
+                            Stok Saat Ini: {{ $service->stock }} Unit
+                        </span>
+                        <a href="{{ route('seller.services.purchases', $service->id) }}" class="btn btn-sm btn-outline-emerald rounded-pill px-3 fw-bold">
+                            <i class="bi bi-journal-text me-1"></i>Buku Pasokan Vendor &rarr;
+                        </a>
+                    </div>
                 </div>
-                <p class="text-muted small mb-4">
-                    Setiap penambahan unit alat baru (restock) dicatat riwayat tanggal, toko beli, dan harga modalnya untuk menentukan nilai aset dan dasar harga sewa.
-                </p>
 
                 {{-- TABEL RIWAYAT PENGADAAN LALU --}}
                 @if($service->stockPurchases && $service->stockPurchases->count() > 0)
                     <div class="table-responsive mb-4 bg-light p-3 rounded-4 border">
-                        <small class="fw-bold text-dark d-block mb-2">Riwayat Pembelian Sebelumnya:</small>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="fw-bold text-dark d-block">Riwayat Pasokan Vendor Sebelumnya:</small>
+                            <a href="{{ route('seller.services.purchases', $service->id) }}" class="small text-emerald fw-bold text-decoration-none">
+                                Lihat Semua ({{ $service->stockPurchases->count() }})
+                            </a>
+                        </div>
                         <table class="table table-sm table-borderless align-middle mb-0 small">
                             <thead>
                                 <tr class="text-muted">
+                                    <th>No. Faktur</th>
                                     <th>Tanggal Beli</th>
-                                    <th>Toko Asal</th>
+                                    <th>Vendor / Toko Asal</th>
                                     <th>Harga Modal</th>
                                     <th>Jumlah Masuk</th>
                                     <th>Kondisi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($service->stockPurchases as $purchase)
+                                @foreach($service->stockPurchases->take(4) as $purchase)
                                 <tr>
+                                    <td><code>{{ $purchase->invoice_number ?: ('PO-' . $purchase->id) }}</code></td>
                                     <td><strong>{{ \Carbon\Carbon::parse($purchase->purchase_date)->format('d M Y') }}</strong></td>
                                     <td>{{ $purchase->purchase_store }}</td>
                                     <td>Rp {{ number_format($purchase->purchase_price, 0, ',', '.') }}</td>
-                                    <td><span class="badge bg-white text-dark border">+{{ $purchase->quantity }} Unit</span></td>
+                                    <td><span class="badge bg-white text-success border border-success-subtle fw-bold">+{{ $purchase->quantity }} Unit</span></td>
                                     <td><span class="badge bg-secondary-subtle text-secondary">{{ ucfirst(str_replace('_',' ',$purchase->condition)) }}</span></td>
                                 </tr>
                                 @endforeach
@@ -112,16 +126,16 @@
 
                 {{-- FORM RESTOCK BATCH BARU --}}
                 <div class="bg-emerald-subtle bg-opacity-25 p-3 rounded-4 border border-emerald">
-                    <h6 class="fw-bold text-emerald mb-2"><i class="bi bi-plus-circle me-1"></i>Catat Penambahan Unit Baru (Restock Batch):</h6>
-                    <small class="text-muted d-block mb-3">Isi formulir ini jika Anda baru saja membeli unit tambahan dari toko/distributor.</small>
+                    <h6 class="fw-bold text-emerald mb-2"><i class="bi bi-plus-circle me-1"></i>Catat Penambahan Unit Baru (Restock dari Vendor):</h6>
+                    <small class="text-muted d-block mb-3">Isi formulir ini jika Anda baru saja membeli unit tambahan dari toko/distributor/vendor.</small>
                     
                     <div class="row g-2 mb-2">
                         <div class="col-md-4">
-                            <label class="form-label small fw-bold text-muted mb-1">Tanggal Beli Masuk</label>
+                            <label class="form-label small fw-bold text-muted mb-1">Tanggal Masuk Beli</label>
                             <input type="date" name="restock_purchase_date" class="form-control form-control-sm border-0 bg-white" value="{{ date('Y-m-d') }}">
                         </div>
                         <div class="col-md-5">
-                            <label class="form-label small fw-bold text-muted mb-1">Beli di Mana (Toko / Distributor)</label>
+                            <label class="form-label small fw-bold text-muted mb-1">Nama Vendor / Toko Distributor</label>
                             <input type="text" name="restock_purchase_store" class="form-control form-control-sm border-0 bg-white" placeholder="Contoh: Shopee Official / Eiger Store">
                         </div>
                         <div class="col-md-3">
@@ -129,11 +143,27 @@
                             <select name="restock_condition" class="form-select form-select-sm border-0 bg-white">
                                 <option value="baru">Baru</option>
                                 <option value="bekas_mulus">Bekas Mulus</option>
+                                <option value="rekondisi">Rekondisi</option>
                             </select>
                         </div>
                     </div>
 
-                    <div class="row g-2">
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-muted mb-1">No. Kontak / Telp Vendor (Opsional)</label>
+                            <input type="text" name="restock_vendor_phone" class="form-control form-control-sm border-0 bg-white" placeholder="Contoh: 08123456789">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-muted mb-1">No. Nota / Faktur (Opsional)</label>
+                            <input type="text" name="restock_invoice_number" class="form-control form-control-sm border-0 bg-white" placeholder="Contoh: INV-EIGER-002">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-muted mb-1">Alamat Toko Vendor (Opsional)</label>
+                            <input type="text" name="restock_vendor_address" class="form-control form-control-sm border-0 bg-white" placeholder="Kota / Alamat Toko">
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-2">
                         <div class="col-md-6">
                             <label class="form-label small fw-bold text-muted mb-1">Harga Beli Modal per Unit (Rp)</label>
                             <div class="input-group input-group-sm">
@@ -144,6 +174,13 @@
                         <div class="col-md-6">
                             <label class="form-label small fw-bold text-muted mb-1">Jumlah Unit yang Dibeli (+Unit)</label>
                             <input type="number" name="restock_quantity" id="restock_quantity" class="form-control form-control-sm border-0 bg-white fw-bold text-emerald" placeholder="0 (Kosongkan jika tidak ada restock)" min="0">
+                        </div>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <label class="form-label small fw-bold text-muted mb-1">Unggah Foto Bukti Struk / Faktur Nota (Opsional)</label>
+                            <input type="file" name="restock_receipt_proof" class="form-control form-control-sm border-0 bg-white" accept="image/*,application/pdf">
                         </div>
                     </div>
                 </div>

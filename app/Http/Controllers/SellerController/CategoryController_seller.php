@@ -12,9 +12,21 @@ class CategoryController_seller extends Controller
     /**
      * Tampilkan semua kategori outdoor
      */
-    public function index()
+    public function index(Request $request)
     {
-        $categories = Category::withCount(['services', 'products'])->latest()->get();
+        $query = Category::withCount(['services', 'products']);
+
+        if ($request->filled('search')) {
+            $s = trim($request->search);
+            $query->where(function ($q) use ($s) {
+                $q->where('name', 'like', "%{$s}%")
+                  ->orWhere('nama_kategori', 'like', "%{$s}%")
+                  ->orWhere('description', 'like', "%{$s}%")
+                  ->orWhere('slug', 'like', "%{$s}%");
+            });
+        }
+
+        $categories = $query->latest()->get();
         return view('SellerView.categories.index_seller', compact('categories'));
     }
 
@@ -34,7 +46,6 @@ class CategoryController_seller extends Controller
         $request->validate([
             'name'        => 'required|string|max:100|unique:categories,name',
             'description' => 'nullable|string|max:500',
-            'icon'        => 'nullable|string|max:50',
         ]);
 
         Category::create([
@@ -42,7 +53,7 @@ class CategoryController_seller extends Controller
             'nama_kategori' => $request->name,
             'slug'          => Str::slug($request->name),
             'description'   => $request->description,
-            'icon'          => $request->icon ?? 'bi-tag',
+            'icon'          => Category::guessIcon($request->name),
         ]);
 
         return redirect()->route('seller.categories.index')->with('success', 'Kategori baru berhasil ditambahkan!');
@@ -64,7 +75,6 @@ class CategoryController_seller extends Controller
         $request->validate([
             'name'        => 'required|string|max:100|unique:categories,name,' . $category->id,
             'description' => 'nullable|string|max:500',
-            'icon'        => 'nullable|string|max:50',
         ]);
 
         $category->update([
@@ -72,7 +82,7 @@ class CategoryController_seller extends Controller
             'nama_kategori' => $request->name,
             'slug'          => Str::slug($request->name),
             'description'   => $request->description,
-            'icon'          => $request->icon ?? $category->icon,
+            'icon'          => $category->icon ?: Category::guessIcon($request->name),
         ]);
 
         return redirect()->route('seller.categories.index')->with('success', 'Kategori berhasil diperbarui!');

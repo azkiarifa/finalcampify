@@ -56,21 +56,47 @@
     </div>
 @endif
 
-{{-- FILTER BUTTONS --}}
-<div class="card card-modern p-3 mb-4 border-0">
-    <div class="d-flex gap-2 flex-wrap">
-        <a href="{{ route('seller.products.index') }}" 
-           class="btn rounded-pill px-4 py-2 fw-semibold {{ request('jenis') == null ? 'btn-emerald' : 'btn-light text-muted' }}">
-           Semua Produk
-        </a>
-        <a href="{{ route('seller.products.index', ['jenis' => 'sewa']) }}" 
-           class="btn rounded-pill px-4 py-2 fw-semibold {{ request('jenis') == 'sewa' ? 'btn-emerald' : 'btn-light text-muted' }}">
-           🏕️ Penyewaan Alat
-        </a>
-        <a href="{{ route('seller.products.index', ['jenis' => 'jual']) }}" 
-           class="btn rounded-pill px-4 py-2 fw-semibold {{ request('jenis') == 'jual' ? 'btn-emerald' : 'btn-light text-muted' }}">
-           🛍️ Penjualan Barang
-        </a>
+{{-- FILTER & SEARCH BAR --}}
+<div class="card card-modern p-3 mb-4 border-0 shadow-sm">
+    <div class="row align-items-center g-3">
+        <div class="col-lg-6 col-md-12">
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ route('seller.products.index', array_filter(['search' => request('search')])) }}" 
+                   class="btn rounded-pill px-3 py-2 fw-semibold {{ request('jenis') == null ? 'btn-emerald' : 'btn-light text-muted' }}">
+                   Semua Produk
+                </a>
+                <a href="{{ route('seller.products.index', array_filter(['jenis' => 'sewa', 'search' => request('search')])) }}" 
+                   class="btn rounded-pill px-3 py-2 fw-semibold {{ request('jenis') == 'sewa' ? 'btn-emerald' : 'btn-light text-muted' }}">
+                   🏕️ Sewa Alat
+                </a>
+                <a href="{{ route('seller.products.index', array_filter(['jenis' => 'jual', 'search' => request('search')])) }}" 
+                   class="btn rounded-pill px-3 py-2 fw-semibold {{ request('jenis') == 'jual' ? 'btn-emerald' : 'btn-light text-muted' }}">
+                   🛍️ Jual Beli
+                </a>
+            </div>
+        </div>
+
+        <div class="col-lg-6 col-md-12">
+            <form action="{{ route('seller.products.index') }}" method="GET" class="d-flex align-items-center justify-content-lg-end gap-2">
+                @if(request('jenis'))
+                    <input type="hidden" name="jenis" value="{{ request('jenis') }}">
+                @endif
+                <div class="input-group" style="max-width: 320px;">
+                    <span class="input-group-text bg-light border-0 ps-3 text-muted">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" name="search" class="form-control border-0 bg-light py-2" placeholder="Cari nama produk, kategori..." value="{{ request('search') }}">
+                    @if(request('search'))
+                        <a href="{{ route('seller.products.index', array_filter(['jenis' => request('jenis')])) }}" class="input-group-text bg-light border-0 text-muted" title="Hapus pencarian">
+                            <i class="bi bi-x-circle-fill"></i>
+                        </a>
+                    @endif
+                </div>
+                <button type="submit" class="btn btn-emerald rounded-pill px-3 py-2 fw-bold shadow-sm">
+                    Cari
+                </button>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -167,14 +193,25 @@
     @empty
     <div class="col-12">
         <div class="card card-modern p-5 text-center border-0 bg-white">
-            <div class="mb-4 fs-1 opacity-25">📦</div>
-            <h4 class="fw-bold">Belum Ada Produk Terdaftar</h4>
-            <p class="text-muted">Katalog produk otomatis terisi saat Anda menambahkan layanan baru di modul Kelola Layanan.</p>
-            <div class="mt-4">
-                <a href="{{ route('seller.services.create') }}" class="btn btn-emerald px-5 py-3 rounded-pill">
-                    <i class="bi bi-plus-circle me-2"></i>Tambah Layanan Sekarang
-                </a>
-            </div>
+            @if(request('search'))
+                <div class="mb-4 fs-1 opacity-25">🔍</div>
+                <h4 class="fw-bold">Produk Tidak Ditemukan</h4>
+                <p class="text-muted">Tidak ada produk katalog yang cocok dengan kata kunci pencarian "<strong>{{ request('search') }}</strong>".</p>
+                <div class="mt-4">
+                    <a href="{{ route('seller.products.index', array_filter(['jenis' => request('jenis')])) }}" class="btn btn-light rounded-pill px-4 border shadow-sm fw-bold">
+                        <i class="bi bi-arrow-repeat me-1"></i>Reset Pencarian
+                    </a>
+                </div>
+            @else
+                <div class="mb-4 fs-1 opacity-25">📦</div>
+                <h4 class="fw-bold">Belum Ada Produk Terdaftar</h4>
+                <p class="text-muted">Katalog produk otomatis terisi saat Anda menambahkan layanan baru di modul Kelola Layanan.</p>
+                <div class="mt-4">
+                    <a href="{{ route('seller.services.create') }}" class="btn btn-emerald px-5 py-3 rounded-pill">
+                        <i class="bi bi-plus-circle me-2"></i>Tambah Layanan Sekarang
+                    </a>
+                </div>
+            @endif
         </div>
     </div>
     @endforelse

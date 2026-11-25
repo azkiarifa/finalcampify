@@ -55,10 +55,10 @@
                         </small>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-bold text-muted small text-uppercase ls-1">Skema Layanan</label>
+                        <label class="form-label fw-bold text-muted small text-uppercase ls-1">Tipe Layanan</label>
                         <select name="service_type" id="service_type" class="form-select form-select-lg border-0 bg-light rounded-3 px-4" required>
-                            <option value="sewa" {{ old('service_type', 'sewa') == 'sewa' ? 'selected' : '' }}>🏕️ Penyewaan Alat</option>
-                            <option value="jual" {{ old('service_type') == 'jual' ? 'selected' : '' }}>🛍️ Jual Beli Barang</option>
+                            <option value="sewa" {{ old('service_type', 'sewa') == 'sewa' ? 'selected' : '' }}>🏕️ Sewa Alat</option>
+                            <option value="jual" {{ old('service_type') == 'jual' ? 'selected' : '' }}>🛍️ Jual Beli</option>
                         </select>
                     </div>
                 </div>
@@ -85,12 +85,27 @@
 
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
-                        <label class="form-label fw-bold text-muted small text-uppercase ls-1">Tanggal Pembelian</label>
+                        <label class="form-label fw-bold text-muted small text-uppercase ls-1">Tanggal Pembelian / Masuk</label>
                         <input type="date" name="purchase_date" id="purchase_date" class="form-control form-control-lg border-0 bg-light rounded-3 px-4" value="{{ old('purchase_date', date('Y-m-d')) }}">
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-bold text-muted small text-uppercase ls-1">Tempat / Toko Beli</label>
+                        <label class="form-label fw-bold text-muted small text-uppercase ls-1">Nama Vendor / Toko Distributor</label>
                         <input type="text" name="purchase_store" id="purchase_store" class="form-control form-control-lg border-0 bg-light rounded-3 px-4" placeholder="Contoh: Eiger Official Store, Shopee, Toko Outdoor ABC" value="{{ old('purchase_store') }}">
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-muted small text-uppercase ls-1">No. Kontak / Telp Vendor (Opsional)</label>
+                        <input type="text" name="vendor_phone" class="form-control form-control-lg border-0 bg-light rounded-3 px-4" placeholder="Contoh: 08123456789" value="{{ old('vendor_phone') }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-muted small text-uppercase ls-1">No. Nota / Faktur Pembelian (Opsional)</label>
+                        <input type="text" name="invoice_number" class="form-control form-control-lg border-0 bg-light rounded-3 px-4" placeholder="Contoh: INV-EIGER-001" value="{{ old('invoice_number') }}">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-bold text-muted small text-uppercase ls-1">Alamat / Kota Vendor (Opsional)</label>
+                        <input type="text" name="vendor_address" class="form-control form-control-lg border-0 bg-light rounded-3 px-4" placeholder="Contoh: Jl. Cihampelas No. 120, Kota Bandung" value="{{ old('vendor_address') }}">
                     </div>
                 </div>
 
@@ -110,6 +125,10 @@
                             <option value="bekas_mulus" {{ old('condition') == 'bekas_mulus' ? 'selected' : '' }}>Bekas Sangat Mulus (90%+)</option>
                             <option value="layak_pakai" {{ old('condition') == 'layak_pakai' ? 'selected' : '' }}>Layak Pakai / Terawat</option>
                         </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-bold text-muted small text-uppercase ls-1">Unggah Bukti Struk / Nota Pembelian (Opsional)</label>
+                        <input type="file" name="receipt_proof" class="form-control border-0 bg-light rounded-3 px-4 py-2" accept="image/*,application/pdf">
                     </div>
                 </div>
             </div>

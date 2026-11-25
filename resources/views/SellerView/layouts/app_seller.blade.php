@@ -30,11 +30,24 @@
             overflow-x: hidden;
         }
 
+        .sidebar {
+            width: 280px;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 1040;
+            overflow-y: auto;
+            background-color: #ffffff;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.04);
+        }
+
         .main-content {
             margin-left: 280px;
             padding: 40px;
             min-height: 100vh;
-            transition: all 0.3s ease;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), padding 0.3s ease;
         }
 
         .card-modern {
@@ -67,14 +80,14 @@
         }
 
         .glass-nav {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(229, 231, 235, 0.6);
             position: sticky;
             top: 0;
             z-index: 999;
             margin-left: 280px;
-            transition: all 0.3s ease;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .alert-modern {
@@ -83,10 +96,128 @@
             padding: 1rem 1.5rem;
         }
 
+        /* Desktop: Collapsed State */
+        @media (min-width: 993px) {
+            body.sidebar-collapsed .sidebar {
+                transform: translateX(-100%);
+            }
+            body.sidebar-collapsed .main-content {
+                margin-left: 0;
+            }
+            body.sidebar-collapsed .glass-nav {
+                margin-left: 0;
+            }
+        }
+
+        /* Mobile & Tablet: Drawer State */
         @media (max-width: 992px) {
-            .sidebar { transform: translateX(-100%); }
-            .main-content { margin-left: 0; padding: 20px; }
-            .glass-nav { margin-left: 0; }
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            body.sidebar-open .sidebar {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 20px;
+            }
+            .glass-nav {
+                margin-left: 0;
+                padding: 12px 20px !important;
+            }
+        }
+
+        /* Backdrop overlay for mobile */
+        .sidebar-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(2px);
+            z-index: 1030;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        body.sidebar-open .sidebar-backdrop {
+            display: block;
+            opacity: 1;
+        }
+
+        #sidebarToggleBtn {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        #sidebarToggleBtn:hover {
+            background-color: var(--soft-emerald) !important;
+            color: var(--primary-emerald) !important;
+            border-color: var(--primary-emerald) !important;
+            transform: scale(1.05);
+        }
+
+        /* Global Pagination & SVG Safety */
+        svg.w-5, svg.h-5, .pagination svg {
+            width: 1rem !important;
+            height: 1rem !important;
+            max-width: 1rem !important;
+            max-height: 1rem !important;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .pagination-container nav {
+            width: 100%;
+        }
+        .pagination-container p {
+            margin-bottom: 0 !important;
+        }
+        .pagination {
+            margin: 0;
+            gap: 6px;
+            display: flex;
+            align-items: center;
+        }
+        .page-item {
+            display: inline-flex;
+        }
+        .page-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 36px;
+            height: 36px;
+            padding: 0 10px;
+            color: #475569;
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px !important;
+            font-size: 0.875rem;
+            font-weight: 600;
+            line-height: 1;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+        .page-link:hover {
+            background-color: #f8fafc;
+            color: #059669;
+            border-color: #cbd5e1;
+        }
+        .page-item.active .page-link {
+            background-color: #10B981 !important;
+            border-color: #10B981 !important;
+            color: #ffffff !important;
+            font-weight: 700;
+            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.25);
+        }
+        .page-item.disabled .page-link {
+            color: #94a3b8 !important;
+            background-color: #f8fafc !important;
+            border-color: #e2e8f0 !important;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -96,15 +227,21 @@
     {{-- SIDEBAR --}}
     @include('SellerView.layouts.sidebar_seller')
 
+    {{-- SIDEBAR BACKDROP (MOBILE) --}}
+    <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
+
     {{-- TOP NAVBAR --}}
-    <nav class="navbar glass-nav p-3 px-5 mb-4">
+    <nav class="navbar glass-nav p-3 px-4 px-lg-5 mb-4">
         <div class="container-fluid d-flex justify-content-between align-items-center">
-            <h5 class="m-0 fw-bold d-lg-none" style="color: var(--primary-emerald)">CAMPIFY</h5>
-            
-            <form id="navbar-search-form" class="search-bar d-none d-md-flex position-relative w-25" method="GET">
-                <i class="bi bi-search position-absolute start-0 top-50 translate-middle-y ms-3 text-muted"></i>
-                <input type="text" name="search" class="form-control border-0 bg-light rounded-pill ps-5 pe-4" placeholder="Cari pesanan, rental, atau produk..." value="{{ request('search') }}">
-            </form>
+            <div class="d-flex align-items-center gap-3">
+                <button type="button" id="sidebarToggleBtn" class="btn btn-light rounded-circle shadow-sm border p-0 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;" title="Buka / Tutup Sidebar">
+                    <i class="bi bi-list fs-4 text-dark"></i>
+                </button>
+                <a href="{{ route('seller.dashboard') }}" class="text-decoration-none d-flex align-items-center gap-2">
+                    <span class="m-0 fw-bold fs-4" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;">CAMPIFY.</span>
+                    <span class="badge bg-emerald-soft text-emerald px-2 py-0.5 rounded-pill fw-semibold text-uppercase d-none d-sm-inline-block" style="font-size: 0.65rem;">Seller</span>
+                </a>
+            </div>
 
             <div class="nav-actions d-flex align-items-center gap-3">
                 {{-- NOTIFICATION BELL DROPDOWN --}}
@@ -210,89 +347,45 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const searchForm = document.getElementById('navbar-search-form');
-            const searchInput = searchForm ? searchForm.querySelector('input[name="search"]') : null;
-            
-            if (searchForm && searchInput) {
-                const path = window.location.pathname;
-                let isListPage = false;
-                let targetType = '';
-                
-                if (path.includes('/seller/orders')) {
-                    searchForm.action = '/seller/orders';
-                    isListPage = true;
-                    targetType = 'orders';
-                } else if (path.includes('/seller/rentals')) {
-                    searchForm.action = '/seller/rentals';
-                    isListPage = true;
-                    targetType = 'rentals';
-                } else if (path.includes('/seller/products')) {
-                    searchForm.action = '/seller/products';
-                    isListPage = true;
-                    targetType = 'products';
-                } else {
-                    searchForm.action = '/seller/products';
-                }
+            // Sidebar Open/Close Toggle Logic
+            const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+            const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+            const sidebarBackdrop = document.getElementById('sidebarBackdrop');
 
-                // If on a list page, perform live local DOM filtering
-                if (isListPage) {
-                    searchInput.addEventListener('input', function() {
-                        const query = this.value.toLowerCase().trim();
-                        
-                        if (targetType === 'products') {
-                            const cards = document.querySelectorAll('.product-card-col');
-                            cards.forEach(card => {
-                                const name = card.getAttribute('data-name') || '';
-                                const desc = card.getAttribute('data-desc') || '';
-                                const cat = card.getAttribute('data-cat') || '';
-                                
-                                if (name.includes(query) || desc.includes(query) || cat.includes(query)) {
-                                    card.style.setProperty('display', '', 'important');
-                                } else {
-                                    card.style.setProperty('display', 'none', 'important');
-                                }
-                            });
-                        } else if (targetType === 'orders') {
-                            const cards = document.querySelectorAll('.order-card-row');
-                            cards.forEach(card => {
-                                const id = card.getAttribute('data-id') || '';
-                                const buyer = card.getAttribute('data-buyer') || '';
-                                const products = card.getAttribute('data-products') || '';
-                                
-                                if (id.includes(query) || buyer.includes(query) || products.includes(query)) {
-                                    card.style.setProperty('display', '', 'important');
-                                } else {
-                                    card.style.setProperty('display', 'none', 'important');
-                                }
-                            });
-                        } else if (targetType === 'rentals') {
-                            const cards = document.querySelectorAll('.rental-card-row');
-                            cards.forEach(card => {
-                                const id = card.getAttribute('data-id') || '';
-                                const user = card.getAttribute('data-user') || '';
-                                const product = card.getAttribute('data-product') || '';
-                                
-                                if (id.includes(query) || user.includes(query) || product.includes(query)) {
-                                    card.style.setProperty('display', '', 'important');
-                                } else {
-                                    card.style.setProperty('display', 'none', 'important');
-                                }
-                            });
-                        }
-                    });
+            function toggleSidebar() {
+                if (window.innerWidth >= 993) {
+                    document.body.classList.toggle('sidebar-collapsed');
+                    const isCollapsed = document.body.classList.contains('sidebar-collapsed');
+                    localStorage.setItem('seller_sidebar_collapsed', isCollapsed ? '1' : '0');
                 } else {
-                    // If on dashboard/other pages, debounce submit to redirect automatically after 800ms
-                    let debounceTimer;
-                    searchInput.addEventListener('input', function() {
-                        clearTimeout(debounceTimer);
-                        debounceTimer = setTimeout(() => {
-                            if (this.value.trim().length > 0) {
-                                searchForm.submit();
-                            }
-                        }, 800);
-                    });
+                    document.body.classList.toggle('sidebar-open');
                 }
             }
+
+            function closeSidebarMobile() {
+                document.body.classList.remove('sidebar-open');
+            }
+
+            if (sidebarToggleBtn) {
+                sidebarToggleBtn.addEventListener('click', toggleSidebar);
+            }
+            if (sidebarCloseBtn) {
+                sidebarCloseBtn.addEventListener('click', closeSidebarMobile);
+            }
+            if (sidebarBackdrop) {
+                sidebarBackdrop.addEventListener('click', closeSidebarMobile);
+            }
+
+            // Restore user's desktop collapsed preference on load
+            if (window.innerWidth >= 993 && localStorage.getItem('seller_sidebar_collapsed') === '1') {
+                document.body.classList.add('sidebar-collapsed');
+            }
+
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 993) {
+                    document.body.classList.remove('sidebar-open');
+                }
+            });
         });
     </script>
 </body>

@@ -15,26 +15,52 @@
     </div>
 </div>
 
-{{-- STATUS TABS --}}
-<div class="card card-modern p-3 mb-5 border-0">
-    <div class="d-flex gap-2 flex-wrap">
-        <a href="{{ route('seller.rentals.index') }}" 
-           class="btn rounded-pill px-4 py-2 fw-semibold {{ request('status') == null ? 'btn-primary border-0' : 'btn-light text-muted' }}" 
-           style="{{ request('status') == null ? 'background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);' : '' }}">
-           Semua
-        </a>
-        <a href="{{ route('seller.rentals.index', ['status' => 'pending']) }}" 
-           class="btn rounded-pill px-4 py-2 fw-semibold {{ request('status') == 'pending' ? 'btn-warning text-dark' : 'btn-light text-muted' }}">
-           Menunggu Konfirmasi
-        </a>
-        <a href="{{ route('seller.rentals.index', ['status' => 'active']) }}" 
-           class="btn rounded-pill px-4 py-2 fw-semibold {{ request('status') == 'active' ? 'btn-info text-white' : 'btn-light text-muted' }}">
-           Sedang Disewa
-        </a>
-        <a href="{{ route('seller.rentals.index', ['status' => 'completed']) }}" 
-           class="btn rounded-pill px-4 py-2 fw-semibold {{ request('status') == 'completed' ? 'btn-emerald' : 'btn-light text-muted' }}">
-           Selesai
-        </a>
+{{-- STATUS TABS & SEARCH BAR --}}
+<div class="card card-modern p-3 mb-5 border-0 shadow-sm">
+    <div class="row align-items-center g-3">
+        <div class="col-lg-7 col-md-12">
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ route('seller.rentals.index', array_filter(['search' => request('search')])) }}" 
+                   class="btn rounded-pill px-3 py-2 fw-semibold {{ request('status') == null ? 'btn-primary border-0' : 'btn-light text-muted' }}" 
+                   style="{{ request('status') == null ? 'background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);' : '' }}">
+                   Semua
+                </a>
+                <a href="{{ route('seller.rentals.index', array_filter(['status' => 'pending', 'search' => request('search')])) }}" 
+                   class="btn rounded-pill px-3 py-2 fw-semibold {{ request('status') == 'pending' ? 'btn-warning text-dark' : 'btn-light text-muted' }}">
+                   Menunggu
+                </a>
+                <a href="{{ route('seller.rentals.index', array_filter(['status' => 'active', 'search' => request('search')])) }}" 
+                   class="btn rounded-pill px-3 py-2 fw-semibold {{ request('status') == 'active' ? 'btn-info text-white' : 'btn-light text-muted' }}">
+                   Disewa
+                </a>
+                <a href="{{ route('seller.rentals.index', array_filter(['status' => 'completed', 'search' => request('search')])) }}" 
+                   class="btn rounded-pill px-3 py-2 fw-semibold {{ request('status') == 'completed' ? 'btn-emerald' : 'btn-light text-muted' }}">
+                   Selesai
+                </a>
+            </div>
+        </div>
+
+        <div class="col-lg-5 col-md-12">
+            <form action="{{ route('seller.rentals.index') }}" method="GET" class="d-flex align-items-center justify-content-lg-end gap-2">
+                @if(request('status'))
+                    <input type="hidden" name="status" value="{{ request('status') }}">
+                @endif
+                <div class="input-group" style="max-width: 300px;">
+                    <span class="input-group-text bg-light border-0 ps-3 text-muted">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" name="search" class="form-control border-0 bg-light py-2" placeholder="Cari ID sewa, penyewa, alat..." value="{{ request('search') }}">
+                    @if(request('search'))
+                        <a href="{{ route('seller.rentals.index', array_filter(['status' => request('status')])) }}" class="input-group-text bg-light border-0 text-muted" title="Hapus pencarian">
+                            <i class="bi bi-x-circle-fill"></i>
+                        </a>
+                    @endif
+                </div>
+                <button type="submit" class="btn btn-primary rounded-pill px-3 py-2 fw-bold shadow-sm">
+                    Cari
+                </button>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -128,9 +154,20 @@
     </div>
     @empty
     <div class="card card-modern p-5 text-center border-0 bg-white shadow-sm rounded-4">
-        <div class="mb-4 fs-1 opacity-25">🏕️</div>
-        <h4 class="fw-bold">Belum Ada Transaksi Sewa</h4>
-        <p class="text-muted">Semua pengajuan sewa perlengkapan akan muncul di sini.</p>
+        @if(request('search'))
+            <div class="mb-4 fs-1 opacity-25">🔍</div>
+            <h4 class="fw-bold">Penyewaan Tidak Ditemukan</h4>
+            <p class="text-muted">Tidak ada transaksi sewa yang cocok dengan kata kunci "<strong>{{ request('search') }}</strong>".</p>
+            <div class="mt-3">
+                <a href="{{ route('seller.rentals.index', array_filter(['status' => request('status')])) }}" class="btn btn-sm btn-light border rounded-pill px-4 fw-bold">
+                    Reset Pencarian
+                </a>
+            </div>
+        @else
+            <div class="mb-4 fs-1 opacity-25">🏕️</div>
+            <h4 class="fw-bold">Belum Ada Transaksi Sewa</h4>
+            <p class="text-muted">Semua pengajuan sewa perlengkapan akan muncul di sini.</p>
+        @endif
     </div>
     @endforelse
 </div>

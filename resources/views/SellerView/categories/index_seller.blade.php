@@ -30,6 +30,26 @@
 @endif
 
 <div class="card card-modern border-0 p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <h5 class="fw-bold text-dark m-0"><i class="bi bi-folder2 text-emerald me-2"></i>Daftar Kategori</h5>
+        <form action="{{ route('seller.categories.index') }}" method="GET" class="d-flex align-items-center gap-2">
+            <div class="input-group" style="max-width: 280px;">
+                <span class="input-group-text bg-light border-0 ps-3 text-muted">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" name="search" class="form-control border-0 bg-light py-2" placeholder="Cari nama kategori..." value="{{ request('search') }}">
+                @if(request('search'))
+                    <a href="{{ route('seller.categories.index') }}" class="input-group-text bg-light border-0 text-muted" title="Hapus pencarian">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </a>
+                @endif
+            </div>
+            <button type="submit" class="btn btn-emerald rounded-pill px-3 py-2 fw-bold shadow-sm">
+                Cari
+            </button>
+        </form>
+    </div>
+
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
@@ -87,8 +107,16 @@
                 @empty
                 <tr>
                     <td colspan="7" class="text-center py-5 text-muted">
-                        <i class="bi bi-folder2-open fs-1 d-block mb-3 opacity-50"></i>
-                        Belum ada kategori yang dibuat.
+                        @if(request('search'))
+                            <i class="bi bi-search fs-1 d-block mb-3 opacity-50"></i>
+                            Kategori dengan kata kunci "<strong>{{ request('search') }}</strong>" tidak ditemukan.
+                            <div class="mt-3">
+                                <a href="{{ route('seller.categories.index') }}" class="btn btn-sm btn-light border rounded-pill px-3 fw-bold">Reset Pencarian</a>
+                            </div>
+                        @else
+                            <i class="bi bi-folder2-open fs-1 d-block mb-3 opacity-50"></i>
+                            Belum ada kategori yang dibuat.
+                        @endif
                     </td>
                 </tr>
                 @endforelse

@@ -5,7 +5,7 @@
     <div class="row align-items-center">
         <div class="col-md-8">
             <h2 class="fw-bold m-0 text-dark">Kelola Layanan Alat Outdoor</h2>
-            <p class="text-muted">Pusat kendali skema layanan alat (Jual Beli & Penyewaan), detail kelengkapan spesifikasi, dan stok barang.</p>
+            <p class="text-muted">Pusat kendali layanan sewa alat & jual beli, detail kelengkapan spesifikasi, dan stok barang.</p>
         </div>
         <div class="col-md-4 text-md-end">
             <a href="{{ route('seller.services.create') }}" class="btn btn-emerald px-4 py-2 rounded-pill shadow-sm fw-bold">
@@ -36,27 +36,46 @@
     </div>
 @endif
 
-{{-- FILTER BUTTONS --}}
+{{-- FILTER & SEARCH BAR --}}
 <div class="card card-modern p-3 mb-4 border-0 shadow-sm">
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div class="d-flex gap-2 flex-wrap">
-            <a href="{{ route('seller.services.index') }}" 
-               class="btn rounded-pill px-4 py-2 fw-semibold {{ request('type') == null ? 'btn-emerald' : 'btn-light text-muted' }}">
-               Semua Layanan
-            </a>
-            <a href="{{ route('seller.services.index', ['type' => 'sewa']) }}" 
-               class="btn rounded-pill px-4 py-2 fw-semibold {{ request('type') == 'sewa' ? 'btn-emerald' : 'btn-light text-muted' }}">
-               🏕️ Skema Penyewaan
-            </a>
-            <a href="{{ route('seller.services.index', ['type' => 'jual']) }}" 
-               class="btn rounded-pill px-4 py-2 fw-semibold {{ request('type') == 'jual' ? 'btn-emerald' : 'btn-light text-muted' }}">
-               🛍️ Skema Jual Beli
-            </a>
+    <div class="row align-items-center g-3">
+        <div class="col-lg-6 col-md-12">
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ route('seller.services.index', array_filter(['search' => request('search')])) }}" 
+                   class="btn rounded-pill px-3 py-2 fw-semibold {{ request('type') == null ? 'btn-emerald' : 'btn-light text-muted' }}">
+                   Semua Layanan
+                </a>
+                <a href="{{ route('seller.services.index', array_filter(['type' => 'sewa', 'search' => request('search')])) }}" 
+                   class="btn rounded-pill px-3 py-2 fw-semibold {{ request('type') == 'sewa' ? 'btn-emerald' : 'btn-light text-muted' }}">
+                   🏕️ Sewa Alat
+                </a>
+                <a href="{{ route('seller.services.index', array_filter(['type' => 'jual', 'search' => request('search')])) }}" 
+                   class="btn rounded-pill px-3 py-2 fw-semibold {{ request('type') == 'jual' ? 'btn-emerald' : 'btn-light text-muted' }}">
+                   🛍️ Jual Beli
+                </a>
+            </div>
         </div>
-        <div>
-            <span class="badge bg-emerald-soft text-emerald px-3 py-2 rounded-pill fw-semibold">
-                <i class="bi bi-arrow-repeat me-1"></i> Terhubung langsung ke Katalog Produk
-            </span>
+
+        <div class="col-lg-6 col-md-12">
+            <form action="{{ route('seller.services.index') }}" method="GET" class="d-flex align-items-center justify-content-lg-end gap-2">
+                @if(request('type'))
+                    <input type="hidden" name="type" value="{{ request('type') }}">
+                @endif
+                <div class="input-group" style="max-width: 320px;">
+                    <span class="input-group-text bg-light border-0 ps-3 text-muted">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" name="search" class="form-control border-0 bg-light py-2" placeholder="Cari layanan, alat, vendor..." value="{{ request('search') }}">
+                    @if(request('search'))
+                        <a href="{{ route('seller.services.index', array_filter(['type' => request('type')])) }}" class="input-group-text bg-light border-0 text-muted" title="Hapus pencarian">
+                            <i class="bi bi-x-circle-fill"></i>
+                        </a>
+                    @endif
+                </div>
+                <button type="submit" class="btn btn-emerald rounded-pill px-3 py-2 fw-bold shadow-sm">
+                    Cari
+                </button>
+            </form>
         </div>
     </div>
 </div>
@@ -144,15 +163,27 @@
                         <div class="d-flex align-items-center justify-content-between mb-1 flex-wrap gap-2">
                             <div class="d-flex align-items-center text-muted small">
                                 <i class="bi bi-shop text-emerald fs-6 me-2"></i>
-                                <span>Beli di: <strong class="text-dark">{{ $service->latestPurchase->purchase_store }}</strong></span>
+                                <span>Vendor: <strong class="text-dark">{{ $service->latestPurchase->purchase_store }}</strong></span>
                             </div>
                             <span class="badge bg-white text-dark border px-2 py-1 fw-bold">
                                 Modal: Rp {{ number_format($service->latestPurchase->purchase_price, 0, ',', '.') }}
                             </span>
                         </div>
-                        <small class="text-muted d-block" style="font-size: 0.72rem;">
-                            <i class="bi bi-calendar-event me-1"></i>Tanggal Pengadaan: {{ \Carbon\Carbon::parse($service->latestPurchase->purchase_date)->format('d M Y') }}
-                        </small>
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mt-1">
+                            <small class="text-muted" style="font-size: 0.72rem;">
+                                <i class="bi bi-calendar-event me-1"></i>Pasokan Terakhir: {{ \Carbon\Carbon::parse($service->latestPurchase->purchase_date)->format('d M Y') }}
+                            </small>
+                            <a href="{{ route('seller.services.purchases', $service->id) }}" class="text-emerald small fw-bold text-decoration-none">
+                                Riwayat Vendor ({{ $service->stockPurchases->count() }}) <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                @else
+                    <div class="p-2.5 bg-light rounded-3 border mb-3 d-flex justify-content-between align-items-center">
+                        <small class="text-muted"><i class="bi bi-shop me-1"></i>Belum ada data pasokan vendor.</small>
+                        <a href="{{ route('seller.services.purchases', $service->id) }}" class="text-emerald small fw-bold text-decoration-none">
+                            + Pasok Vendor
+                        </a>
                     </div>
                 @endif
 
@@ -216,8 +247,11 @@
 
                 {{-- ACTION BUTTONS --}}
                 <div class="d-flex gap-2 pt-2 border-top">
-                    <a href="{{ route('seller.services.edit', $service->id) }}" class="btn btn-emerald flex-grow-1 rounded-3 py-2 fw-bold d-flex align-items-center justify-content-center shadow-sm">
-                        <i class="bi bi-sliders me-2"></i>Kelola Stok & Detail
+                    <a href="{{ route('seller.services.purchases', $service->id) }}" class="btn btn-outline-emerald flex-grow-1 rounded-3 py-2 fw-bold d-flex align-items-center justify-content-center shadow-sm" title="Riwayat pengadaan dari vendor & pasok unit baru">
+                        <i class="bi bi-box-arrow-in-down me-1.5"></i>Pasok & Riwayat Vendor
+                    </a>
+                    <a href="{{ route('seller.services.edit', $service->id) }}" class="btn btn-light border rounded-3 px-3 py-2 fw-bold text-dark d-flex align-items-center justify-content-center shadow-sm" title="Kelola Stok & Detail">
+                        <i class="bi bi-sliders"></i>
                     </a>
                     <form action="{{ route('seller.services.destroy', $service->id) }}" method="POST" onsubmit="return confirm('Hapus layanan ini beserta produk katalognya?')">
                         @csrf
@@ -234,14 +268,25 @@
     @empty
     <div class="col-12">
         <div class="card card-modern p-5 text-center border-0 bg-white shadow-sm">
-            <div class="mb-4 fs-1 opacity-25">🛠️</div>
-            <h4 class="fw-bold">Belum Ada Layanan Terdaftar</h4>
-            <p class="text-muted">Mulailah dengan menambahkan layanan sewa atau jual beli baru untuk produk outdoor Anda.</p>
-            <div class="mt-4">
-                <a href="{{ route('seller.services.create') }}" class="btn btn-emerald px-5 py-3 rounded-pill shadow-sm fw-bold">
-                    <i class="bi bi-plus-circle me-2"></i>Tambah Layanan Sekarang
-                </a>
-            </div>
+            @if(request('search'))
+                <div class="mb-4 fs-1 opacity-25">🔍</div>
+                <h4 class="fw-bold">Layanan Tidak Ditemukan</h4>
+                <p class="text-muted">Tidak ada layanan yang cocok dengan kata kunci pencarian "<strong>{{ request('search') }}</strong>".</p>
+                <div class="mt-4">
+                    <a href="{{ route('seller.services.index', array_filter(['type' => request('type')])) }}" class="btn btn-light rounded-pill px-4 border shadow-sm fw-bold">
+                        <i class="bi bi-arrow-repeat me-1"></i>Reset Pencarian
+                    </a>
+                </div>
+            @else
+                <div class="mb-4 fs-1 opacity-25">🛠️</div>
+                <h4 class="fw-bold">Belum Ada Layanan Terdaftar</h4>
+                <p class="text-muted">Mulailah dengan menambahkan layanan sewa atau jual beli baru untuk produk outdoor Anda.</p>
+                <div class="mt-4">
+                    <a href="{{ route('seller.services.create') }}" class="btn btn-emerald px-5 py-3 rounded-pill shadow-sm fw-bold">
+                        <i class="bi bi-plus-circle me-2"></i>Tambah Layanan Sekarang
+                    </a>
+                </div>
+            @endif
         </div>
     </div>
     @endforelse

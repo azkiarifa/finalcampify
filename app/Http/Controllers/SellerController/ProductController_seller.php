@@ -24,6 +24,16 @@ class ProductController_seller extends Controller
             $query->where('jenis_produk', $request->jenis);
         }
 
+        if ($request->filled('search')) {
+            $s = trim($request->search);
+            $query->where(function ($q) use ($s) {
+                $q->where('nama_produk', 'like', "%{$s}%")
+                  ->orWhere('name', 'like', "%{$s}%")
+                  ->orWhere('description', 'like', "%{$s}%")
+                  ->orWhere('category', 'like', "%{$s}%");
+            });
+        }
+
         $products = $query->latest()->get();
 
         return view('SellerView.products.index_seller', compact('products'));

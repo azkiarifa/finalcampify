@@ -15,29 +15,55 @@
     </div>
 </div>
 
-{{-- STATUS TABS --}}
-<div class="card card-modern p-3 mb-5 border-0">
-    <div class="d-flex gap-2 flex-wrap">
-        <a href="{{ route('seller.orders.index') }}" 
-           class="btn rounded-pill px-4 py-2 fw-semibold {{ request('status') == null ? 'btn-emerald' : 'btn-light text-muted' }}">
-           Semua
-        </a>
-        <a href="{{ route('seller.orders.index', ['status' => 'pending']) }}"
-           class="btn rounded-pill px-4 py-2 fw-semibold {{ in_array(request('status'), ['pending', 'menunggu']) ? 'btn-warning text-dark' : 'btn-light text-muted' }}">
-           Menunggu Konfirmasi
-        </a>
-        <a href="{{ route('seller.orders.index', ['status' => 'processing']) }}"
-           class="btn rounded-pill px-4 py-2 fw-semibold {{ in_array(request('status'), ['processing', 'diproses']) ? 'btn-info text-white' : 'btn-light text-muted' }}">
-           Sedang Diproses
-        </a>
-        <a href="{{ route('seller.orders.index', ['status' => 'shipped']) }}"
-           class="btn rounded-pill px-4 py-2 fw-semibold {{ in_array(request('status'), ['shipped', 'dikirim']) ? 'btn-primary' : 'btn-light text-muted' }}">
-           Dalam Pengiriman
-        </a>
-        <a href="{{ route('seller.orders.index', ['status' => 'delivered']) }}"
-           class="btn rounded-pill px-4 py-2 fw-semibold {{ in_array(request('status'), ['delivered', 'selesai']) ? 'btn-emerald' : 'btn-light text-muted' }}">
-           Selesai
-        </a>
+{{-- STATUS TABS & SEARCH BAR --}}
+<div class="card card-modern p-3 mb-5 border-0 shadow-sm">
+    <div class="row align-items-center g-3">
+        <div class="col-lg-7 col-md-12">
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ route('seller.orders.index', array_filter(['search' => request('search')])) }}" 
+                   class="btn rounded-pill px-3 py-2 fw-semibold {{ request('status') == null ? 'btn-emerald' : 'btn-light text-muted' }}">
+                   Semua
+                </a>
+                <a href="{{ route('seller.orders.index', array_filter(['status' => 'pending', 'search' => request('search')])) }}"
+                   class="btn rounded-pill px-3 py-2 fw-semibold {{ in_array(request('status'), ['pending', 'menunggu']) ? 'btn-warning text-dark' : 'btn-light text-muted' }}">
+                   Menunggu
+                </a>
+                <a href="{{ route('seller.orders.index', array_filter(['status' => 'processing', 'search' => request('search')])) }}"
+                   class="btn rounded-pill px-3 py-2 fw-semibold {{ in_array(request('status'), ['processing', 'diproses']) ? 'btn-info text-white' : 'btn-light text-muted' }}">
+                   Diproses
+                </a>
+                <a href="{{ route('seller.orders.index', array_filter(['status' => 'shipped', 'search' => request('search')])) }}"
+                   class="btn rounded-pill px-3 py-2 fw-semibold {{ in_array(request('status'), ['shipped', 'dikirim']) ? 'btn-primary' : 'btn-light text-muted' }}">
+                   Dikirim
+                </a>
+                <a href="{{ route('seller.orders.index', array_filter(['status' => 'delivered', 'search' => request('search')])) }}"
+                   class="btn rounded-pill px-3 py-2 fw-semibold {{ in_array(request('status'), ['delivered', 'selesai']) ? 'btn-emerald' : 'btn-light text-muted' }}">
+                   Selesai
+                </a>
+            </div>
+        </div>
+
+        <div class="col-lg-5 col-md-12">
+            <form action="{{ route('seller.orders.index') }}" method="GET" class="d-flex align-items-center justify-content-lg-end gap-2">
+                @if(request('status'))
+                    <input type="hidden" name="status" value="{{ request('status') }}">
+                @endif
+                <div class="input-group" style="max-width: 300px;">
+                    <span class="input-group-text bg-light border-0 ps-3 text-muted">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" name="search" class="form-control border-0 bg-light py-2" placeholder="Cari ID order, pembeli, produk..." value="{{ request('search') }}">
+                    @if(request('search'))
+                        <a href="{{ route('seller.orders.index', array_filter(['status' => request('status')])) }}" class="input-group-text bg-light border-0 text-muted" title="Hapus pencarian">
+                            <i class="bi bi-x-circle-fill"></i>
+                        </a>
+                    @endif
+                </div>
+                <button type="submit" class="btn btn-emerald rounded-pill px-3 py-2 fw-bold shadow-sm">
+                    Cari
+                </button>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -161,9 +187,20 @@
     </div>
     @empty
     <div class="card card-modern p-5 text-center border-0 bg-white">
-        <div class="mb-4 fs-1 opacity-25">🧾</div>
-        <h4 class="fw-bold">Belum Ada Pesanan</h4>
-        <p class="text-muted">Semua pesanan produk Anda akan muncul di halaman ini.</p>
+        @if(request('search'))
+            <div class="mb-4 fs-1 opacity-25">🔍</div>
+            <h4 class="fw-bold">Pesanan Tidak Ditemukan</h4>
+            <p class="text-muted">Tidak ada pesanan yang cocok dengan kata kunci "<strong>{{ request('search') }}</strong>".</p>
+            <div class="mt-3">
+                <a href="{{ route('seller.orders.index', array_filter(['status' => request('status')])) }}" class="btn btn-sm btn-light border rounded-pill px-4 fw-bold">
+                    Reset Pencarian
+                </a>
+            </div>
+        @else
+            <div class="mb-4 fs-1 opacity-25">🧾</div>
+            <h4 class="fw-bold">Belum Ada Pesanan</h4>
+            <p class="text-muted">Semua pesanan produk Anda akan muncul di halaman ini.</p>
+        @endif
     </div>
     @endforelse
 </div>

@@ -231,6 +231,9 @@ Route::middleware(['auth', 'role:seller'])->prefix('seller')->name('seller.')->g
     Route::resource('/categories', CategoryController_seller::class);
 
     // 🛠️ Kelola Layanan (Centralized Service & Specification Management)
+    Route::get('/services/{service}/purchases', [ServiceController_seller::class, 'purchases'])->name('services.purchases');
+    Route::post('/services/{service}/restock', [ServiceController_seller::class, 'restock'])->name('services.restock');
+    Route::get('/services/{service}/purchases/{purchase}', [ServiceController_seller::class, 'purchaseDetail'])->name('services.purchases.show');
     Route::resource('/services', ServiceController_seller::class);
 
     // 📦 Katalog Produk (Read-Only Projection)
