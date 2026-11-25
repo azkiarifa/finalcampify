@@ -138,7 +138,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <div>
                         <h5 class="fw-bold m-0 text-dark"><i class="bi bi-box-seam text-emerald me-2"></i>Rincian Kelengkapan Paket</h5>
-                        <p class="text-muted small m-0">Tambahkan detail aksesori pendukung. Setiap biaya tambahan kelengkapan akan otomatis menambah harga katalog produk.</p>
+                        <p class="text-muted small m-0">Tambahkan detail aksesori pendukung jika ada (opsional). Setiap biaya tambahan kelengkapan akan otomatis menambah harga katalog produk.</p>
                     </div>
                     <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-3 fw-bold" id="btnAddDetail">
                         <i class="bi bi-plus-lg me-1"></i> Tambah Item
@@ -150,7 +150,7 @@
                         <div class="row g-2 align-items-center">
                             <div class="col-md-5">
                                 <label class="form-label small fw-bold text-muted mb-1">Nama Item Kelengkapan</label>
-                                <input type="text" name="details[0][item_name]" class="form-control border-0 bg-white rounded-3" placeholder="Contoh: Unit Utama Tenda & Frame" required>
+                                <input type="text" name="details[0][item_name]" class="form-control border-0 bg-white rounded-3" placeholder="Contoh: Unit Utama Tenda & Frame">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label small fw-bold text-muted mb-1">Biaya Tambahan (Rp)</label>
@@ -160,12 +160,16 @@
                                 </div>
                             </div>
                             <div class="col-md-3 text-end pt-3 pt-md-4">
-                                <button type="button" class="btn btn-outline-danger btn-sm rounded-3 btnRemoveDetail" disabled>
+                                <button type="button" class="btn btn-outline-danger btn-sm rounded-3 btnRemoveDetail" title="Hapus Item">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <div id="noDetailsAlert" class="text-muted small py-3 px-3 rounded-3 bg-light text-center border border-dashed" style="display: none;">
+                    <i class="bi bi-info-circle me-1"></i> Tidak ada rincian kelengkapan paket tambahan. Produk ini akan dijual/disewakan sebagai unit tunggal. Klik tombol <strong>+ Tambah Item</strong> di atas jika ingin menambahkan kelengkapan.
                 </div>
             </div>
 
@@ -200,7 +204,7 @@
                             <span class="input-group-text border-0 bg-light rounded-start-3 px-3 fw-bold">Rp</span>
                             <input type="number" name="escrow_deposit" id="escrow_deposit" class="form-control form-control-lg border-0 bg-light rounded-end-3 px-4" placeholder="0" value="{{ old('escrow_deposit', 0) }}" min="0">
                         </div>
-                        <small class="text-muted mt-1 d-block">Otomatis dihitung dari modal beli (atau disesuaikan manual).</small>
+                        <small class="text-muted mt-1 d-block">Otomatis dihitung 50% dari tarif sewa (atau disesuaikan manual).</small>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold text-muted small text-uppercase ls-1">Minimal Durasi Sewa (Hari)</label>
@@ -244,8 +248,8 @@
 
                 <div class="bg-black bg-opacity-20 p-3 rounded-3 small mb-3" id="suggestionBox" style="display: none;">
                     <div class="fw-bold text-warning mb-1">💡 Rekomendasi Cerdas:</div>
-                    <div>Saran Tarif Sewa (7% modal): <strong id="recRentalRate">Rp 0</strong>/hari</div>
-                    <div>Saran Jaminan Escrow (50% modal): <strong id="recEscrow">Rp 0</strong></div>
+                    <div id="recRentalRateWrap">Saran Tarif Sewa (7% modal): <strong id="recRentalRate">Rp 0</strong>/hari</div>
+                    <div>Saran Jaminan Escrow (50% harga sewa): <strong id="recEscrow">Rp 0</strong></div>
                 </div>
 
                 <div class="small opacity-90">
@@ -289,10 +293,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const suggestionBox = document.getElementById('suggestionBox');
     const recRentalRate = document.getElementById('recRentalRate');
+    const recRentalRateWrap = document.getElementById('recRentalRateWrap');
     const recEscrow = document.getElementById('recEscrow');
     const applySuggestionBtn = document.getElementById('applySuggestionBtn');
 
     let detailIndex = 1;
+    let userEditedEscrow = false;
+
+    escrowInput.addEventListener('input', function() {
+        userEditedEscrow = true;
+    });
 
     function toggleServiceType() {
         if (serviceType.value === 'sewa') {
@@ -319,15 +329,28 @@ document.addEventListener('DOMContentLoaded', function () {
         previewAdd.innerText = 'Rp ' + additionals.toLocaleString('id-ID');
         previewTotal.innerText = 'Rp ' + total.toLocaleString('id-ID');
 
-        // Rekomendasi berdasarkan modal beli
-        if (modal > 0 && serviceType.value === 'sewa') {
+        // Rekomendasi Cerdas untuk Sewa
+        if (serviceType.value === 'sewa' && (modal > 0 || base > 0)) {
             suggestionBox.style.display = 'block';
-            const suggestedDaily = Math.round(modal * 0.07); // 7% dari modal beli
-            const suggestedEscrow = Math.round(modal * 0.5); // 50% jaminan modal
-            recRentalRate.innerText = 'Rp ' + suggestedDaily.toLocaleString('id-ID');
+            
+            const suggestedDaily = modal > 0 ? Math.round(modal * 0.07) : 0; // 7% dari modal beli
+            const activeRentalRate = base > 0 ? base : suggestedDaily;
+            const suggestedEscrow = Math.round(activeRentalRate * 0.5); // 50% dari harga sewa
+
+            if (suggestedDaily > 0) {
+                recRentalRateWrap.style.display = 'block';
+                recRentalRate.innerText = 'Rp ' + suggestedDaily.toLocaleString('id-ID');
+            } else {
+                recRentalRateWrap.style.display = 'none';
+            }
             recEscrow.innerText = 'Rp ' + suggestedEscrow.toLocaleString('id-ID');
 
-            if (base === 0) {
+            // Auto-fill saran escrow jika belum diubah manual oleh seller
+            if (!userEditedEscrow && (escrowInput.value === '' || parseFloat(escrowInput.value) === 0)) {
+                escrowInput.value = suggestedEscrow;
+            }
+
+            if (base === 0 && modal > 0) {
                 applySuggestionBtn.style.display = 'inline';
             } else {
                 applySuggestionBtn.style.display = 'none';
@@ -342,9 +365,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const modal = parseFloat(purchasePriceInput.value) || 0;
         if (modal > 0) {
             const suggestedDaily = Math.round(modal * 0.07);
-            const suggestedEscrow = Math.round(modal * 0.5);
+            const suggestedEscrow = Math.round(suggestedDaily * 0.5); // 50% dari harga sewa
             basePriceInput.value = suggestedDaily;
-            if (!escrowInput.value || parseFloat(escrowInput.value) === 0) {
+            if (!userEditedEscrow) {
                 escrowInput.value = suggestedEscrow;
             }
             recalculateLivePrice();
@@ -359,6 +382,16 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    function checkDetailsEmpty() {
+        const rows = detailsContainer.querySelectorAll('.detail-row');
+        const alertBox = document.getElementById('noDetailsAlert');
+        if (rows.length === 0) {
+            if (alertBox) alertBox.style.display = 'block';
+        } else {
+            if (alertBox) alertBox.style.display = 'none';
+        }
+    }
+
     btnAddDetail.addEventListener('click', function () {
         const row = document.createElement('div');
         row.className = 'detail-row bg-light rounded-4 p-3 mb-3 border';
@@ -366,7 +399,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="row g-2 align-items-center">
                 <div class="col-md-5">
                     <label class="form-label small fw-bold text-muted mb-1">Nama Item Kelengkapan</label>
-                    <input type="text" name="details[${detailIndex}][item_name]" class="form-control border-0 bg-white rounded-3" placeholder="Contoh: Pasak Tambahan / Footprint" required>
+                    <input type="text" name="details[${detailIndex}][item_name]" class="form-control border-0 bg-white rounded-3" placeholder="Contoh: Pasak Tambahan / Footprint">
                 </div>
                 <div class="col-md-4">
                     <label class="form-label small fw-bold text-muted mb-1">Biaya Tambahan (Rp)</label>
@@ -376,7 +409,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>
                 </div>
                 <div class="col-md-3 text-end pt-3 pt-md-4">
-                    <button type="button" class="btn btn-outline-danger btn-sm rounded-3 btnRemoveDetail">
+                    <button type="button" class="btn btn-outline-danger btn-sm rounded-3 btnRemoveDetail" title="Hapus Item">
                         <i class="bi bi-trash"></i>
                     </button>
                 </div>
@@ -384,6 +417,7 @@ document.addEventListener('DOMContentLoaded', function () {
         `;
         detailsContainer.appendChild(row);
         detailIndex++;
+        checkDetailsEmpty();
         recalculateLivePrice();
     });
 
@@ -391,6 +425,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const btn = e.target.closest('.btnRemoveDetail');
         if (btn) {
             btn.closest('.detail-row').remove();
+            checkDetailsEmpty();
             recalculateLivePrice();
         }
     });

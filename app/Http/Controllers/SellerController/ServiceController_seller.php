@@ -96,7 +96,7 @@ class ServiceController_seller extends Controller
             'notes'                => 'nullable|string|max:1000',
             // Rincian Kelengkapan Paket
             'details'              => 'nullable|array',
-            'details.*.item_name'  => 'required_with:details|string|max:255',
+            'details.*.item_name'  => 'nullable|string|max:255',
             'details.*.additional_price' => 'nullable|numeric|min:0',
         ]);
 
@@ -127,9 +127,15 @@ class ServiceController_seller extends Controller
             
             // Perhitungan otomatis escrow jaminan jika sewa dan seller tidak mengisi manual
             $escrowAmount = $request->escrow_deposit ?? 0;
-            if ($request->service_type === 'sewa' && empty($request->escrow_deposit) && $purchasePrice > 0) {
-                // Default jaminan = 50% dari harga beli modal
-                $escrowAmount = (int) ($purchasePrice * 0.5);
+            if ($request->service_type === 'sewa' && empty($request->escrow_deposit)) {
+                $basePrice = (int) ($request->base_price ?? 0);
+                if ($basePrice > 0) {
+                    // Default jaminan = 50% dari tarif sewa harian
+                    $escrowAmount = (int) round($basePrice * 0.5);
+                } elseif ($purchasePrice > 0) {
+                    // Fallback jika belum isi base price tapi ada modal: 50% dari tarif harian (7% modal)
+                    $escrowAmount = (int) round(($purchasePrice * 0.07) * 0.5);
+                }
             }
 
             // 1. Simpan Header Layanan
@@ -407,7 +413,7 @@ class ServiceController_seller extends Controller
             'restock_receipt_proof'  => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:3072',
             // Details
             'details'              => 'nullable|array',
-            'details.*.item_name'  => 'required_with:details|string|max:255',
+            'details.*.item_name'  => 'nullable|string|max:255',
             'details.*.additional_price' => 'nullable|numeric|min:0',
         ]);
 

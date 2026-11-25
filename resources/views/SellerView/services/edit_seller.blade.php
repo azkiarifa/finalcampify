@@ -204,7 +204,7 @@
                             <div class="row g-2 align-items-center">
                                 <div class="col-md-5">
                                     <label class="form-label small fw-bold text-muted mb-1">Nama Item Kelengkapan</label>
-                                    <input type="text" name="details[{{ $idx }}][item_name]" class="form-control border-0 bg-white rounded-3" value="{{ $detail->item_name }}" required>
+                                    <input type="text" name="details[{{ $idx }}][item_name]" class="form-control border-0 bg-white rounded-3" value="{{ $detail->item_name }}">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label small fw-bold text-muted mb-1">Biaya Tambahan (Rp)</label>
@@ -214,7 +214,7 @@
                                     </div>
                                 </div>
                                 <div class="col-md-3 text-end pt-3 pt-md-4">
-                                    <button type="button" class="btn btn-outline-danger btn-sm rounded-3 btnRemoveDetail">
+                                    <button type="button" class="btn btn-outline-danger btn-sm rounded-3 btnRemoveDetail" title="Hapus Item">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
@@ -225,7 +225,7 @@
                             <div class="row g-2 align-items-center">
                                 <div class="col-md-5">
                                     <label class="form-label small fw-bold text-muted mb-1">Nama Item Kelengkapan</label>
-                                    <input type="text" name="details[0][item_name]" class="form-control border-0 bg-white rounded-3" placeholder="Contoh: Unit Utama & Pasak Cadangan" required>
+                                    <input type="text" name="details[0][item_name]" class="form-control border-0 bg-white rounded-3" placeholder="Contoh: Unit Utama & Pasak Cadangan">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label small fw-bold text-muted mb-1">Biaya Tambahan (Rp)</label>
@@ -235,13 +235,17 @@
                                     </div>
                                 </div>
                                 <div class="col-md-3 text-end pt-3 pt-md-4">
-                                    <button type="button" class="btn btn-outline-danger btn-sm rounded-3 btnRemoveDetail" disabled>
+                                    <button type="button" class="btn btn-outline-danger btn-sm rounded-3 btnRemoveDetail" title="Hapus Item">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
                             </div>
                         </div>
                     @endforelse
+                </div>
+
+                <div id="noDetailsAlert" class="text-muted small py-3 px-3 rounded-3 bg-light text-center border border-dashed" style="display: none;">
+                    <i class="bi bi-info-circle me-1"></i> Tidak ada rincian kelengkapan paket tambahan. Produk ini dijual/disewakan sebagai unit tunggal. Klik tombol <strong>+ Tambah Item</strong> di atas jika ingin menambahkan kelengkapan.
                 </div>
             </div>
 
@@ -403,6 +407,16 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    function checkDetailsEmpty() {
+        const rows = detailsContainer.querySelectorAll('.detail-row');
+        const alertBox = document.getElementById('noDetailsAlert');
+        if (rows.length === 0) {
+            if (alertBox) alertBox.style.display = 'block';
+        } else {
+            if (alertBox) alertBox.style.display = 'none';
+        }
+    }
+
     btnAddDetail.addEventListener('click', function () {
         const row = document.createElement('div');
         row.className = 'detail-row bg-light rounded-4 p-3 mb-3 border';
@@ -410,7 +424,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="row g-2 align-items-center">
                 <div class="col-md-5">
                     <label class="form-label small fw-bold text-muted mb-1">Nama Item Kelengkapan</label>
-                    <input type="text" name="details[${detailIndex}][item_name]" class="form-control border-0 bg-white rounded-3" placeholder="Contoh: Pasak Cadangan" required>
+                    <input type="text" name="details[${detailIndex}][item_name]" class="form-control border-0 bg-white rounded-3" placeholder="Contoh: Pasak Cadangan">
                 </div>
                 <div class="col-md-4">
                     <label class="form-label small fw-bold text-muted mb-1">Biaya Tambahan (Rp)</label>
@@ -420,7 +434,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>
                 </div>
                 <div class="col-md-3 text-end pt-3 pt-md-4">
-                    <button type="button" class="btn btn-outline-danger btn-sm rounded-3 btnRemoveDetail">
+                    <button type="button" class="btn btn-outline-danger btn-sm rounded-3 btnRemoveDetail" title="Hapus Item">
                         <i class="bi bi-trash"></i>
                     </button>
                 </div>
@@ -428,6 +442,7 @@ document.addEventListener('DOMContentLoaded', function () {
         `;
         detailsContainer.appendChild(row);
         detailIndex++;
+        checkDetailsEmpty();
         recalculateLivePrice();
     });
 
@@ -435,10 +450,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const btn = e.target.closest('.btnRemoveDetail');
         if (btn) {
             btn.closest('.detail-row').remove();
+            checkDetailsEmpty();
             recalculateLivePrice();
         }
     });
 
+    checkDetailsEmpty();
     recalculateLivePrice();
 });
 </script>
